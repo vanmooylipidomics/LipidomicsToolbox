@@ -1,4 +1,4 @@
-# LipdiomicsToolbox
+# LipidomicsToolbox
 Scripts for converting &amp; processing HPLC-MS lipid data. These scripts were developed in the [Van Mooy Lab](http://www.whoi.edu/page.do?pid=80356) at [Woods Hole Oceanographic Institution](http://www.whoi.edu/). Many of them were written specifically to prepare HPLC-ESI-MS data from an Exactive Orbitrap mass spectrometer for follow-on analysis with the [LOBSTAHS](http://github.com/vanmooylipidomics/LOBSTAHS) pipeline. In this repository:
 
 1. prepOrbidata.R: The current version of LOBSTAHS presumes data pre-processing with [xcms](https://bioconductor.org/packages/release/bioc/html/xcms.html) and [CAMERA](https://bioconductor.org/packages/release/bioc/html/CAMERA.html); prepOrbidata.R can help with this. Includes interactive user prompts to facilitate "easy" analysis by users not deeply conversant in R. If the user chooses, applies [IPO](https://github.com/glibiseller/IPO) to optimize xcms peak picking and retention time correction parameters. Includes a function to write the results of each IPO optimization run to a .csv file so the results aren't lost.
