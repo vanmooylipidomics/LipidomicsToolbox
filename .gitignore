@@ -1,11 +1,16 @@
-# Build and Release Folders
-bin/
-bin-debug/
-bin-release/
+# Object file
+*.o
 
-# Other files and folders
-.settings/
+# .history files
+*.history
+*.Rhistory
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# MATLAB temp files
+*.m~
+
+# directories & files I dont want indexed, for now
+r_process_files
+rsmDirectory
+
+# RData stores
+*.RData
