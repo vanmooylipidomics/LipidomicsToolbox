@@ -12,7 +12,7 @@ R scripts for converting &amp; processing HPLC-MS lipid data. These scripts were
 
 <h4>Data (.mzXML):</h4>
 
-1. The raw data files that used to reside here have been incorporated into their own R package and thus have their own repository: https://github.com/vanmooylipidomics/PtH2O2lipids
+The raw data files that used to reside here have been incorporated into their own R package **PtH2O2lipids** and thus have their own repository: https://github.com/vanmooylipidomics/PtH2O2lipids
 
 <h4>A note on CAMERA and xcms versus other tools</h4>
 
