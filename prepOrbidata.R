@@ -3,19 +3,19 @@
 # Created 11/18/2015 by Jamie Collins, james.r.collins@aya.yale.edu
 # Name changed from LOBSTAHS_main.R to prepOrbidata.R by J.R.C., 12/4/2015 
 #
-# Purpose: Use xcms, CAMERA, and (optionally) IPO to prepare a multiple sample, HPLC-ESI-MS dataset from the Exactive Plus Orbitrap for follow-on feature ID and annotation with LOBSTAHS_main.R, the Lipid and Oxylipin Biomarker Screening through Adduct Hierarchy Sequences (LOBTAHS) screening pipeline.
+# Purpose: Use xcms, CAMERA, and (optionally) IPO to prepare a multiple sample, HPLC-ESI-MS dataset from the Exactive Plus Orbitrap for follow-on feature ID and annotation with the LOBSTAHS (Lipid and Oxylipin Biomarker Screening through Adduct Hierarchy Sequences) package.
 #
-# LOBSTAHS is under development by the Van Mooy Lab at Woods Hole Oceanographic Institution. Currently, the script is written to analyze lipid data from the experiment described in Graff van Creveld et al., 2015, "Early perturbation in mitochondria redox homeostasis in response to environmental stress predicts cell fate in diatoms," ISME Journal 9:385-395. This dataset is used to demonstrate the LOBSTAHS lipidomics pipeline in Collins, J.R., B.R. Edwards, H.F. Fredricks, and B.A.S. Van Mooy, 2015, "Untargeted discovery and identification of oxidative stress biomarkers using a lipidomics pipeline for complex datasets."
+# LOBSTAHS is under development by the Van Mooy Lab at Woods Hole Oceanographic Institution. Currently, this script is written to analyze lipid data from the experiment described in Graff van Creveld et al., 2015, "Early perturbation in mitochondria redox homeostasis in response to environmental stress predicts cell fate in diatoms," ISME Journal 9:385-395. This dataset is used to demonstrate the use of LOBSTAHS in Collins, J.R., B.R. Edwards, H.F. Fredricks, and B.A.S. Van Mooy, "Untargeted discovery and identification of oxidative stress biomarkers using a lipidomics pipeline for complex datasets."
 #
 # This script:
 #
 #  1. Uses xcms to perform (1) peak picking and integration, (2) chromatographic alignment, and (3) nonlinear grouping across samples. Requires package "IPO" for parameter optimization.
 #
-#  2. Uses CAMERA to perform (1) identification of secondary isotope peaks, (2) creation of CAMERA pseudospectra using correlation xcms peak groups between and within samples, and (3) creation of a CAMERA xsAnnotate object suitable for submission to LOBSTAHS_main.R
+#  2. Uses CAMERA to perform (1) identification of secondary isotope peaks, (2) creation of CAMERA pseudospectra using correlation xcms peak groups between and within samples, and (3) creation of a CAMERA xsAnnotate object suitable for input to the LOBSTAHS function "doLOBscreen"
 #
-# As described in Collins, J.R., B.R. Edwards, H.F. Fredricks, and B.A.S. Van Mooy, 2015, "Untargeted discovery and identification of oxidative stress biomarkers using a lipidomics pipeline for complex datasets"
+# As described in Collins, J.R., B.R. Edwards, H.F. Fredricks, and B.A.S. Van Mooy, "Untargeted discovery and identification of oxidative stress biomarkers using a lipidomics pipeline for complex datasets"
 #
-# Obtain current versions of scripts and necessary dependencies at https://github.com/vanmooylipidomics/LOBSTAHS/
+# Obtain current versions of packages, scripts, and necessary dependencies at https://github.com/vanmooylipidomics/
 #
 # Please direct questions/suggestions/comments to Jamie Collins, james.r.collins@aya.yale.edu, or Helen Fredricks, hfredricks@whoi.edu
 #
@@ -29,9 +29,9 @@
 #
 # This script the following inputs:
 #
-#  1. A series of .mzXML files from the same dataset, containing centroided ms1 data of a single ion mode. File conversion from the Thermo .raw format, centroiding of data, and extraction of + and - mode scans into separate files can be accomplished in batch using the script "Exactive_full_scan_process_ms1+.r", available from https://github.com/vanmooylipidomics/LOBSTAHS. The .mzXML files should be placed together in a single directory, which can be specified by the user below.
+#  1. A series of .mzXML files from the same dataset, containing centroided ms1 data of a single ion mode. File conversion from the Thermo .raw format, centroiding of data, and extraction of + and - mode scans into separate files can be accomplished in batch using the script "Exactive_full_scan_process_ms1+.r", available from https://github.com/vanmooylipidomics/LipidomicsToolbox. The .mzXML files should be placed together in a single directory, which can be specified by the user below.
 #
-#  2. If the package IPO was previously used to optimize xcms peak-picking or group/retcor parameters AND automatic import of the optimized settings from an existing .csv file is desired, specification of the path to file "IPO_xcmsparamfits_ ... .csv," where ... is an ISO 8601 timestamp. A suitable .csv file will be generated if the user elects IPO at two user-input points in this script, or such a file can be generated from IPO using the helper script optim_centWaveParams_standalone.R, latest version at https://github.com/vanmooylipidomics/LOBSTAHS/blob/master/optim_centWaveParams_standalone.R
+#  2. If the package IPO was previously used to optimize xcms peak-picking or group/retcor parameters AND automatic import of the optimized settings from an existing .csv file is desired, specification of the path to file "IPO_xcmsparamfits_ ... .csv," where ... is an ISO 8601 timestamp. A suitable .csv file will be generated if the user elects IPO at two user-input points in this script, or such a file can be generated from IPO using the helper script optim_centWaveParams_standalone.R, latest version at https://github.com/vanmooylipidomics/LipidomicsToolbox/blob/master/optim_centWaveParams_standalone.R
 
 ################ Initial setup and variable definition #############
 
@@ -69,7 +69,7 @@ library(snowfall) # if multicore tasking is desired
 
 ################ User: define locations of data files and database(s) #############
 
-working_dir = "/Users/jrcollins/Dropbox/code/LOBSTAHS/" # specify working directory
+working_dir = "/Users/jrcollins/Dropbox/code/PtH2O2lipids/data-raw/“ # specify working directory
 setwd(working_dir) # set working directory to working_dir
 
 # specify directories subordinate to the working directory in which the .mzXML files for xcms can be found; per xcms documentation, use subdirectories within these to divide files according to treatment/primary environmental variable (e.g., station number along a cruise transect) and file names to indicate timepoint/secondary environmental variable (e.g., depth)
@@ -819,7 +819,7 @@ xset_gr.ret.rg.fill = fillPeaks.chrom(xset_gr.ret.rg, nSlaves = 4)
 ##### Isotope peak identification, creation of xsAnnotate object using CAMERA #######
 #####################################################################################
 
-print(paste0("Applying CAMERA to identify isotopic peaks, create xsAnnotate object, and create CAMERA pseudospectra using correlation of xcms peak groups between and within samples. These pseudospectra are the groups within which the adduct hierarchy and retention time screening criteria will be applied using LOBSTAHS_main.R"))
+print(paste0("Applying CAMERA to identify isotopic peaks, create xsAnnotate object, and create CAMERA pseudospectra using correlation of xcms peak groups between and within samples. These pseudospectra are the groups within which the adduct hierarchy and retention time screening criteria will be applied using LOBSTAHS"))
 
 # first, a necessary workaround to avoid a import error; see https://support.bioconductor.org/p/69414/
 imports = parent.env(getNamespace("CAMERA"))
@@ -875,8 +875,8 @@ xset_a = annotate(xset_gr.ret.rg.fill,
 
 cleanParallel(xset_a) # kill sockets
 
-# at this point, should have an xsAnnotate object called "xset_a" in hand, which will serve as the primary input to the main screening and annotation function in LOBSTAHS_main.R
+# at this point, should have an xsAnnotate object called "xset_a" in hand, which will serve as the primary input to the main screening and annotation function "doLOBscreen" in LOBSTAHS
 
-print(paste0("xsAnnotate object 'xset_a' has been created. User can now open script 'LOBSTAHS_main.R' and perform screening..."))
+print(paste0("xsAnnotate object 'xset_a' has been created. User can now use LOBSTAHS to perform screening..."))
 
 print(xset_a)

@@ -2,13 +2,13 @@
 #
 # Created 11/28/2015 by J.R.C.
 #
-# Purpose: "Standalone" script to optimize parameters for the xcms command findPeaks.centWave, using the R package "IPO." Currently, the script is written to optimize parameters for peak-picking, alignment, etc., of lipid data from the experiment described in Graff van Creveld et al., 2015, "Early perturbation in mitochondria redox homeostasis in response to environmental stress predicts cell fate in diatoms," ISME Journal 9:385-395. This dataset is used to demonstrate the LOBSTAHS lipidomics pipeline in Collins, J.R., B.R. Edwards, H.F. Fredricks, and B.A.S. Van Mooy, 2015, "Untargeted discovery and identification of oxidative stress biomarkers using a lipidomics pipeline for complex datasets."
+# Purpose: "Standalone" script to optimize parameters for the xcms command findPeaks.centWave, using the R package "IPO." Currently, the script is written to optimize parameters for peak-picking, alignment, etc., of lipid data from the experiment described in Graff van Creveld et al., 2015, "Early perturbation in mitochondria redox homeostasis in response to environmental stress predicts cell fate in diatoms," ISME Journal 9:385-395. This dataset is used to demonstrate application of the LOBSTAHS package in Collins, J.R., B.R. Edwards, H.F. Fredricks, and B.A.S. Van Mooy, "Untargeted discovery and identification of oxidative stress biomarkers using a lipidomics pipeline for complex datasets."
 #
 # This script still functions on its own, but the functionality contained in it has been folded into prepOrbidata.R
 #
 # IPO is described in Libiseller et al., 2015, "IPO: a tool for automated optimization of XCMS parameters," BMC Bioinformatics 16:118; see https://github.com/glibiseller/IPO/blob/master/vignettes/IPO.Rmd for installation instructions
 #
-# See https://github.com/vanmooylipidomics/LOBSTAHS for current versions of all pipeline scripts
+# See https://github.com/vanmooylipidomics/ for current versions of package and all pipeline scripts
 
 ################ Initial setup and variable definition #############
 
@@ -33,7 +33,7 @@ library(snowfall) # if multicore tasking is desired
 
 ################# User: define locations of data files and database(s) #############
 
-working_dir = "/Users/jrcollins/Dropbox/code/LOBSTAHS/" # specify working directory
+working_dir = "/Users/jrcollins/Dropbox/code/PtH2O2lipids/data-raw/" # specify working directory
 setwd(working_dir) # set working directory to working_dir
 
 # specify directories subordinate to the working directory in which the .mzXML files for xcms can be found; per xcms documentation, use subdirectories within these to divide files according to treatment/primary environmental variable (e.g., station number along a cruise transect) and file names to indicate timepoint/secondary environmental variable (e.g., depth)

@@ -2,9 +2,8 @@
 #
 # Purpose: Batch convert and process full-scan mass spectrometer data from the Exactive Plus Orbitrap; creates .mzXML files from Thermo .raw files by leveraging the command-line msconvert toolbox
 #
-# Can be used alone, or to prep files for use with the LOBSTAHS lipidomics pipeline described in Collins, J.R., B.R. Edwards, H.F. Fredricks, and B.A.S. Van Mooy (2015), in preparation for Lipids
+# Latest version of script available at https://github.com/vanmooylipidomics/LipidomicsToolbox/
 #
-# Latest version of script available at https://github.com/vanmooylipidomics/lipidomics
 # Please direct questions/suggestions/comments to Jamie Collins, james.r.collins@aya.yale.edu, or Helen Fredricks, hfredricks@whoi.edu
 #
 # Note: This version of the script extracts and processes all (i.e., ms1 and higher) scans
