@@ -69,12 +69,16 @@ library(snowfall) # if multicore tasking is desired
 
 ################ User: define locations of data files and database(s) #############
 
-working_dir = "/Users/jrcollins/Dropbox/code/PtH2O2lipids/data-raw/“ # specify working directory
+working_dir = "/Users/jrcollins/Code/PtH2O2lipids/mzXML/" # specify working directory
 setwd(working_dir) # set working directory to working_dir
 
 # specify directories subordinate to the working directory in which the .mzXML files for xcms can be found; per xcms documentation, use subdirectories within these to divide files according to treatment/primary environmental variable (e.g., station number along a cruise transect) and file names to indicate timepoint/secondary environmental variable (e.g., depth)
 
 mzXMLdirs = c("Pt_H2O2_mzXML_ms1_pos/","Pt_H2O2_mzXML_ms1_neg/")
+
+# specify which of the directories above you wish to analyze this time through 
+
+chosenFileSubset = "Pt_H2O2_mzXML_ms1_pos/"
 
 # specify the ID numbers (i.e., Orbi_xxxx.mzXML) of any files you don't want to push through xcms (e.g., blanks); note that the blanks for the Pt H2O2 dataset (Orbi_0481.mzXML and Orbi_0482.mzXML) have already been removed
 
@@ -89,11 +93,30 @@ IPO.filesubset = c("0468","0476","0477")
 saved_IPO_params_centW = "IPO_xcmsparamfits_2015-12-01T18-36-10-0300.csv"
 saved_IPO_params_groupretcor = "IPO_retcorGroupparamfits_2015-12-04T08-42-39-0300.csv"
 
+################ User: specify where to obtain parameters for the various packages #############
+
+# user: specify which xcms centWave parameter values to use, and whether to run IPO
+
+# centWparam.source = 1 # to run IPO for optimization now, then use those settings
+centWparam.source = 2 # to use default settings specified in script below
+# centWparam.source = 3 # to read in previously optimized parameter values from the .csv file specified immediately above as saved_IPO_params_centW
+
+# user: specify which xcms group and retcor parameter values to use, and whether to run IPO
+
+# groupretcor.prams.source = 1 # to run IPO for optimization now, then use those settings
+groupretcor.prams.source = 2 # to use default settings specified in script below
+# groupretcor.prams.source = 3 # to read in previously optimized parameter values from the .csv file specified immediately above as saved_IPO_params_groupretcor
+
+# user: specify whether to use retcor method 'loess' or method 'obiwarp'
+
+retcor.meth = "loess"
+# retcor.meth = "obiwarp"
+
 # ******************************************************************
 ################ Basic user stop editing here #############
 # ******************************************************************
 
-################# Define functions #############
+################# Define functions; run me first #############
 
 # readinteger: for a given prompt, allows capture of user input as an integer; rejects non-integer input
 
@@ -162,7 +185,7 @@ verifyFileIonMode = function(mzXMLfile) {
 
 getSubsetIonMode = function(mzXMLfilelist) {
   
-  ionmodecount = sum(sapply(mzXMLfilelist, verifyIonMode)) # get sum of ion mode indicators for the files in the subset
+  ionmodecount = sum(sapply(mzXMLfilelist, verifyFileIonMode)) # get sum of ion mode indicators for the files in the subset
   
   if (ionmodecount==length(mzXMLfilelist)) { # can conclude that all files contain positive mode data
     
@@ -221,19 +244,15 @@ genTimeStamp = function () {
   
 }
 
-################# Load in mzXML files, get xcms settings from IPO or user input #############
+# check to make sure user has specified at least something in mzXMLdirs
 
-# allow user to choose which subset of files to process
-
-if (!exists("mzXMLdirs")) { # check to make sure user has specified at least something in mzXMLdirs
+if (!exists("mzXMLdirs")) { 
   
   stop("User has not specified any directories containing mzXML files. Specify a value for mzXMLdirs.")
   
-} else { # allow user to choose
-  
-  chosenFileSubset = selectXMLSubDir(mzXMLdirs)
+} 
 
-}
+################# Load in mzXML files, get xcms settings from IPO or user input #############
 
 # load selected subset for processing
 
@@ -265,15 +284,6 @@ if (exists("excluded.mzXMLfiles") & length("excluded.mzXMLfiles")>0) {
 #####################################################################################
 ######## Peak-picking & creation of xcmsSet using xcms (and IPO, if desired) ########
 #####################################################################################
-
-################# Allow user to specify which centWave parameter values to use, and whether to run IPO #############
-
-print(paste0("Specify where to obtain parameters for peak picking using findPeaks.centWave."))
-print(paste0("Enter '1' to run IPO for optimization now, then use those settings."))
-print(paste0("Enter '2' to use default settings specified in script."))
-print(paste0("Enter '3' to read in previously optimized parameter values from a .csv file specified in the file path definitions section of the script."))
-
-centWparam.source = readinteger("Parameter source: ")
 
 if (centWparam.source==1) { # user wants to run IPO now
   
@@ -515,30 +525,6 @@ print(xset_centWave)
 #####################################################################################
 ##### Grouping and retention time correction using xcms (and IPO, if desired) #######
 #####################################################################################
-
-################# Allow user to specify which group and retcor parameter values to use, and whether to run IPO #############
-
-print(paste0("Specify where to obtain parameters for group() and retcor()."))
-print(paste0("Enter '1' to run IPO for optimization now, then use those settings."))
-print(paste0("Enter '2' to use default settings specified in script."))
-print(paste0("Enter '3' to read in previously optimized parameter values from a .csv file specified in the file path definitions section of the script."))
-
-groupretcor.prams.source = readinteger("Parameter source: ")
-
-print(paste0("Specify whether to use retcor method 'loess' or 'obiwarp.'"))
-print(paste0("Enter '1' for 'loess,' '2' for 'obiwarp.'"))
-
-retcor.input = readinteger("Retcor method: ")
-
-if (retcor.input==2) {
-  
-  retcor.meth = "obiwarp"
-  
-} else {
-  
-  retcor.meth = "loess"
-  
-}
 
 if (groupretcor.prams.source==1) { # user wants to run IPO now
   
