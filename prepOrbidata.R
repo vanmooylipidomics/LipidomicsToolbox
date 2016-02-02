@@ -5,7 +5,7 @@
 #
 # Purpose: Use xcms, CAMERA, and (optionally) IPO to prepare a multiple sample, HPLC-ESI-MS dataset from the Exactive Plus Orbitrap for follow-on feature ID and annotation with the LOBSTAHS (Lipid and Oxylipin Biomarker Screening through Adduct Hierarchy Sequences) package.
 #
-# LOBSTAHS is under development by the Van Mooy Lab at Woods Hole Oceanographic Institution. Currently, this script is written to analyze lipid data from the experiment described in Graff van Creveld et al., 2015, "Early perturbation in mitochondria redox homeostasis in response to environmental stress predicts cell fate in diatoms," ISME Journal 9:385-395. This dataset is used to demonstrate the use of LOBSTAHS in Collins, J.R., B.R. Edwards, H.F. Fredricks, and B.A.S. Van Mooy, "Untargeted discovery and identification of oxidative stress biomarkers using a lipidomics pipeline for complex datasets."
+# LOBSTAHS is under development by the Van Mooy Lab at Woods Hole Oceanographic Institution. Currently, this script is written to analyze lipid data from the experiment described in Graff van Creveld et al., 2015, "Early perturbation in mitochondria redox homeostasis in response to environmental stress predicts cell fate in diatoms," ISME Journal 9:385-395. This dataset is used to demonstrate the use of LOBSTAHS in Collins, J.R., B.R. Edwards, H.F. Fredricks, and B.A.S. Van Mooy, "Semi-untargeted discovery and identification of oxidative stress biomarkers using a lipidomics pipeline for complex datasets."
 #
 # This script:
 #

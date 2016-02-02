@@ -2,7 +2,7 @@
 #
 # Created 11/28/2015 by J.R.C.
 #
-# Purpose: "Standalone" script to optimize parameters for the xcms command findPeaks.centWave, using the R package "IPO." Currently, the script is written to optimize parameters for peak-picking, alignment, etc., of lipid data from the experiment described in Graff van Creveld et al., 2015, "Early perturbation in mitochondria redox homeostasis in response to environmental stress predicts cell fate in diatoms," ISME Journal 9:385-395. This dataset is used to demonstrate application of the LOBSTAHS package in Collins, J.R., B.R. Edwards, H.F. Fredricks, and B.A.S. Van Mooy, "Untargeted discovery and identification of oxidative stress biomarkers using a lipidomics pipeline for complex datasets."
+# Purpose: "Standalone" script to optimize parameters for the xcms command findPeaks.centWave, using the R package "IPO." Currently, the script is written to optimize parameters for peak-picking, alignment, etc., of lipid data from the experiment described in Graff van Creveld et al., 2015, "Early perturbation in mitochondria redox homeostasis in response to environmental stress predicts cell fate in diatoms," ISME Journal 9:385-395. This dataset is used to demonstrate application of the LOBSTAHS package in Collins, J.R., B.R. Edwards, H.F. Fredricks, and B.A.S. Van Mooy, "Semi-untargeted discovery and identification of oxidative stress biomarkers using a lipidomics pipeline for complex datasets."
 #
 # This script still functions on its own, but the functionality contained in it has been folded into prepOrbidata.R
 #
