@@ -264,7 +264,7 @@ subset.polarity = getSubsetIonMode(mzXMLfiles.raw)
 
 # provide some feedback to user
 
-print(paste0("Loaded ",length(mzXMLfiles.raw)," mzXML files. These files contain ",current.polarity," ion mode data. Raw dataset consists of:"))
+print(paste0("Loaded ",length(mzXMLfiles.raw)," mzXML files. These files contain ",subset.polarity," ion mode data. Raw dataset consists of:"))
 
 print(mzXMLfiles.raw)
 
@@ -278,6 +278,10 @@ if (exists("excluded.mzXMLfiles") & length("excluded.mzXMLfiles")>0) {
   print(mzXMLfiles.raw[excludedfiles])
         
   mzXMLfiles = mzXMLfiles.raw[-excludedfiles] # exclude the files from mzXMLfiles
+  
+} else {
+  
+  mzXMLfiles = mzXMLfiles.raw
   
 }
 
@@ -427,7 +431,7 @@ centW.nSlaves = 4 # if you have r package "snow" installed, can set to number of
 
 # # create xcmsRaw object from just a single sample (for method development)
 
-# xfile_raw = xcmsRaw(mzXMLfiles[1], profparam = centW.profparam)
+# xfile_raw = xcmsRaw(mzXMLfiles[1], profparam = centW.profparam, includeMSn=TRUE)
 # profStep(xfile_raw) = 0.005
 
 # rawpeaks = findPeaks.centWave(xfile_raw,
@@ -646,7 +650,7 @@ if (groupretcor.prams.source==1) { # user wants to run IPO now
   loess.extra = 1
   loess.smoothing = "loess"
   loess.span = c(0.2)
-  loess.family = "gaussian", # want to leave outliers in for the time being
+  loess.family = "gaussian" # want to leave outliers in for the time being
   
   # retcor.obiwarp settings below are the function defaults
   
@@ -847,7 +851,7 @@ xset_a = annotate(xset_gr.ret.rg.fill,
                   
                   psg_list=NULL,
                   rules=NULL,
-                  polarity=current.polarity,
+                  polarity=subset.polarity,
                   multiplier=3,
                   max_peaks=100,
                   
