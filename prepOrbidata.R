@@ -1,7 +1,7 @@
 # prepOrbidata.R
 #
 # Created 11/18/2015 by Jamie Collins, james.r.collins@aya.yale.edu
-# Name changed from LOBSTAHS_main.R to prepOrbidata.R by J.R.C., 12/4/2015 
+# Name changed from LOBSTAHS_main.R to prepOrbidata.R by J.R.C., 12/4/2015
 #
 # Purpose: Use xcms, CAMERA, and (optionally) IPO to prepare a multiple sample, HPLC-ESI-MS dataset from the Exactive Plus Orbitrap for follow-on feature ID and annotation with the LOBSTAHS (Lipid and Oxylipin Biomarker Screening through Adduct Hierarchy Sequences) package.
 #
@@ -38,13 +38,13 @@
 # run this section before specifying user settings, below
 
 # clear workspace
-# 
+#
 # WS = c(ls())
 # rm(WS, list = WS)
 
 # load required packages
 
-library(tools) 
+library(tools)
 
 library(xcms)
 
@@ -57,11 +57,13 @@ library(rsm)
 # run two lines below only if IPO hasn't been installed already
 
 # library(devtools)
-# install_github("glibiseller/IPO") 
+# install_github("glibiseller/IPO")
 
 library(IPO)
 
-library(snowfall) # if multicore tasking is desired
+# library(snowfall) # if multicore tasking is desired; seems this line may be unncessary under Windows R
+
+library(snow) # if multicore tasking is desired
 
 # ******************************************************************
 ################ Basic user begin editing here #############
@@ -76,7 +78,7 @@ setwd(working_dir) # set working directory to working_dir
 
 mzXMLdirs = c("Pt_H2O2_mzXML_ms1_pos/","Pt_H2O2_mzXML_ms1_neg/")
 
-# specify which of the directories above you wish to analyze this time through 
+# specify which of the directories above you wish to analyze this time through
 
 chosenFileSubset = "Pt_H2O2_mzXML_ms1_pos/"
 
@@ -123,113 +125,113 @@ retcor.meth = "loess"
 readinteger = function(prompttext) {
 
   n = readline(prompt=prompttext)
-  
+
   if (!grepl("^[0-9]+$", n)) {
-    
+
     return(readinteger(prompttext))
-    
+
   }
-  
+
   as.integer(n)
-  
+
 }
 
 # readyesno: for a given prompt, allows capture of user input as y or n; rejects other input
 
 readyesno = function(prompttext) {
-  
+
   n = readline(prompt=prompttext)
-  
+
   if (!grepl("y|n", n)) {
-    
+
     return(readyesno(prompttext))
-    
+
   }
-  
+
   as.character(n)
-  
+
 }
 
 
 # verifyFileIonMode: return the ion mode of data in a particular mzXML file, by examining "polarity" attribute of each scan in the file
 
 verifyFileIonMode = function(mzXMLfile) {
-  
+
   rawfile = xcmsRaw(mzXMLfile) # create an xcmsraw object out of the first file
-  
+
   # determine ion mode by examining identifier attached to scan events
-  
+
   if (table(rawfile@polarity)["negative"]==0 & (table(rawfile@polarity)["positive"]==length(rawfile@scanindex))) { # can deduce that the file contains positive mode data
-    
+
     filepolarity = 1 # positive
-    
+
   } else if (table(rawfile@polarity)["positive"]==0 & (table(rawfile@polarity)["negative"]==length(rawfile@scanindex))) { # probably negative mode data
-    
+
     filepolarity = -1 # negative
-    
+
   } else if (table(rawfile@polarity)["positive"]>=1 & table(rawfile@polarity)["negative"]>=1) { # scans of both mode present in the file; the original .raw files weren't split by mode during initial .mzXML conversion, or something else is wrong
-    
+
     stop("At least one file in the current dataset contains scans of more than one ion mode. Please ensure data for different ion modes have been extracted into separate files. Stopping...") # stop script if this is the case
-    
+
   } else if (table(rawfile@polarity)["positive"]==0 & table(rawfile@polarity)["negative"]==0) {
-    
+
     stop("Can't determine ion mode of data in the first file. Check manner in which files were converted. Stopping...") # stop script if this is the case
-    
+
   }
-  
+
   filepolarity
-  
+
 }
 
 # getSubsetIonMode: return the ion mode of a subset of files, using sapply of verifyFileIonMode
 
 getSubsetIonMode = function(mzXMLfilelist) {
-  
+
   ionmodecount = sum(sapply(mzXMLfilelist, verifyFileIonMode)) # get sum of ion mode indicators for the files in the subset
-  
+
   if (ionmodecount==length(mzXMLfilelist)) { # can conclude that all files contain positive mode data
-    
+
     subset.polarity = "positive"
-    
+
   } else if (ionmodecount==-length(mzXMLfilelist)) { # can conclude that all files contain negative mode data
-     
+
     subset.polarity = "negative"
-    
+
   }
-  
+
   subset.polarity
-  
+
 }
 
 # selectXMLSubDir: allows user to choose which subset of files to process
 
 selectXMLSubDir = function(mzXMLdirList) {
-  
+
   print(paste0("mzXML files exist in the following directories:"))
-  
+
   for (i in 1:length(mzXMLdirList)) {
-    
+
     # get number of mzXML files in this directory
     numGoodFiles = length(list.files(mzXMLdirList[i], recursive = TRUE, full.names = TRUE, pattern = "*(.mzXML|.mzxml)"))
-    
+
     if (numGoodFiles>0) { # there are .mzXML data files in this directory
-      
+
       print(paste0(i, ". ", numGoodFiles," .mzXML files in directory '",mzXMLdirList[i],"'"))
-      
+
     }
-    
+
   }
-  
+
   processDecision = readinteger("Specify which subset you'd like to process, using integer input: ")
-  
+
   mzXMLdirList[processDecision]
-  
+
 }
 
 # getFNmatches: returns index(es) of file names in a given file list containing the ID numbers in a match list
 
 getFNmatches = function(filelist,IDnumlist) {
-  
+
   unique(grep(paste(IDnumlist,collapse="|"),filelist, value=FALSE))
 
 }
@@ -237,20 +239,20 @@ getFNmatches = function(filelist,IDnumlist) {
 # genTimeStamp: generates a timestamp string based on the current system time
 
 genTimeStamp = function () {
-  
+
   output_DTG = format(Sys.time(), "%Y-%m-%dT%X%z") # return current time in a good format
   output_DTG = gsub(" ", "_", output_DTG) # replace any spaces
   output_DTG = gsub(":", "-", output_DTG) # replaces any colons with dashes (Mac compatibility)
-  
+
 }
 
 # check to make sure user has specified at least something in mzXMLdirs
 
-if (!exists("mzXMLdirs")) { 
-  
+if (!exists("mzXMLdirs")) {
+
   stop("User has not specified any directories containing mzXML files. Specify a value for mzXMLdirs.")
-  
-} 
+
+}
 
 ################# Load in mzXML files, get xcms settings from IPO or user input #############
 
@@ -271,18 +273,18 @@ print(mzXMLfiles.raw)
 # check whether user has elected to exclude any files, and exclude them if they happen to be in this subset
 
 if (exists("excluded.mzXMLfiles") & length("excluded.mzXMLfiles")>0) {
-  
+
   excludedfiles = getFNmatches(IDnumlist = excluded.mzXMLfiles, filelist = mzXMLfiles.raw) # index files to be excluded
-  
+
   print(paste0("The following files will be excluded from processing based on user's input:"))
   print(mzXMLfiles.raw[excludedfiles])
-        
+
   mzXMLfiles = mzXMLfiles.raw[-excludedfiles] # exclude the files from mzXMLfiles
-  
+
 } else {
-  
+
   mzXMLfiles = mzXMLfiles.raw
-  
+
 }
 
 #####################################################################################
@@ -290,18 +292,18 @@ if (exists("excluded.mzXMLfiles") & length("excluded.mzXMLfiles")>0) {
 #####################################################################################
 
 if (centWparam.source==1) { # user wants to run IPO now
-  
+
   ################# Use IPO to optimize some xcms peak-picking parameters #############
-  
+
   # IPO is described in Libiseller et al., 2015, "IPO: a tool for automated optimization of XCMS parameters," BMC Bioinformatics 16:118; see https://github.com/glibiseller/IPO/blob/master/vignettes/IPO.Rmd for installation instructions
-  
+
   # will use IPO to optimize settings for method = centWave
-  
+
   # define ranges of parameters to be tested
   # if single value is specified for a parameter, or centWave default is used, that parameter will not be optimized
-  
+
   peakpickingParameters = getDefaultXcmsSetStartingParams('centWave')  # get defaults
-  
+
   peakpickingParameters$min_peakwidth = c(10,20) # centerpoint is 15
   peakpickingParameters$max_peakwidth = c(40,80) # centerpoint is 60
   peakpickingParameters$ppm = 2.5 # want to set this low to avoid peak data insertion errors from centWave; IPO wants to use something like 5.5 ppm if you allow it to "optimize," but this is too high
@@ -309,71 +311,71 @@ if (centWparam.source==1) { # user wants to run IPO now
   peakpickingParameters$value_of_prefilter = c(1000,10000)
   peakpickingParameters$snthresh = c(10)
   peakpickingParameters$noise = c(500)
-  
+
   # only going to use three 0 uM H2O2 treatment files from the dataset for optimization routine
   # seems that mzXMLfiles.raw[c(2,5)] throw up the error:
   #
-  #       Error in checkForRemoteErrors(val) : 
+  #       Error in checkForRemoteErrors(val) :
   #        ... nodes produced an error
   #
   # so, will use the other three files (mzXMLfiles[c(1,3,5)])
-  
+
   # # code to diagnose which files contain scans that are causing the package to give error
-  
+
   # xcmsraw = xcmsRaw(mzXMLfiles[5])
   # scan121=getScan(xcmsraw,scan=107)
   # scan121[2429,]
-  
+
   print(paste0("Using R package IPO to optimize centWave peak-picking settings with starting parameters user has specified in script. Using following subset of files for optimization:"))
-  
+
   if (exists("IPO.filesubset") & length("IPO.filesubset")>0) {
-    
+
     IPOsubset = mzXMLfiles[getFNmatches(IDnumlist = IPO.filesubset, filelist = mzXMLfiles)] # get indexes to subset
     print(IPOsubset)
-    
+
   } else {
-    
+
     print(paste0("User did not specify a subset of files for IPO optimization."))
     print(paste0("Defaulting to all files in the current dataset. This will take long time and may yield errors."))
-    
+
     IPOsubset = mzXMLfiles
-    
+
   }
-  
-  resultPeakpicking = optimizeXcmsSet(files = IPOsubset, 
+
+  resultPeakpicking = optimizeXcmsSet(files = IPOsubset,
                                        params = peakpickingParameters,
                                        nSlaves=4,
                                        subdir='rsmDirectory')
-  
+
   optimizedXcmsSetObject = resultPeakpicking$best_settings$xset
-  
+
   ################# Export IPO starting value(s) and optimal settings for each parameter to .csv #############
-  
+
   # write 3-column table to .csv using write.table()
-  
+
   peakpicking.exportmat = cbind(sort(rownames(as.matrix(peakpickingParameters))),
                                 as.character(resultPeakpicking$best_settings$parameters[sort(names(resultPeakpicking$best_settings$parameters))]),
                                 as.character(peakpickingParameters[sort(rownames(as.matrix(peakpickingParameters)))]))
-  
+
   # append an additional row with the file names of the files used for optimization
-  
+
   peakpicking.exportmat = rbind(peakpicking.exportmat,c("Files_used_for_optimization",paste(IPOsubset, collapse = ", "),""))
-  
+
   timestamp.now = print(genTimeStamp())
-  
+
   write.table(peakpicking.exportmat,
               file = paste("IPO_centWaveparamfits_",timestamp.now,".csv",sep=""),
               col.names = c("centWave_parameter","IPO_optim_value","Starting_value(s)"),
               row.names = FALSE,
               sep=",")
-  
+
   print(paste0("IPO optimization complete. Optimized and starting values for"))
   print(paste0("centWave parameters written to file: IPO_centWaveparamfits_",timestamp.now,".csv"))
-  
+
   # use the just-obtained optimized parameter values for xcmsSet creation
-  
+
   print(paste0("Using IPO-optimized settings for findPeaks.centWave..."))
-  
+
   centW.min_peakwidth = resultPeakpicking$best_settings$parameters$min_peakwidth
   centW.max_peakwidth = resultPeakpicking$best_settings$parameters$max_peakwidth
   centW.ppm = resultPeakpicking$best_settings$parameters$ppm
@@ -381,30 +383,30 @@ if (centWparam.source==1) { # user wants to run IPO now
   centW.snthresh = resultPeakpicking$best_settings$parameters$snthresh
   centW.prefilter = c(resultPeakpicking$best_settings$parameters$prefilter,resultPeakpicking$best_settings$parameters$value_of_prefilter)
   centW.noise = resultPeakpicking$best_settings$parameters$noise
-  
+
   # not using IPO settings from resultPeakpicking$best_settings$parameters for mzCenterFun, integrate, fitgauss, verbose.columns, nSlaves since those weren't targets of optimization
-  
+
 } else if (centWparam.source==2) { # user wants to use settings specified below
-  
+
   print(paste0("Using values of centWave parameters specified in the script by user..."))
-  
+
   # "non-optimized" settings listed here are based on recommended "HPLC/Orbitrap settings" from Table 1 of Patti et al., 2012, "Meta-analysis of untargeted metabolomic data from multiple profiling experiment," Nature Protocols 7: 508-516
-  
-  centW.min_peakwidth = 10 
-  centW.max_peakwidth = 45 # lowered from Patti et al. recommended HPLC setting of 60 based on visual inspection of a single sample with plotPeaks 
+
+  centW.min_peakwidth = 10
+  centW.max_peakwidth = 45 # lowered from Patti et al. recommended HPLC setting of 60 based on visual inspection of a single sample with plotPeaks
   centW.ppm = 2.5
   centW.mzdiff = 0.005
   centW.snthresh = 10
   centW.prefilter = c(3,7500) # 3.5k recommended by Patti et al. appears to be too low
   centW.noise = 500
-  
+
 } else if (centWparam.source==3) { # user wants to read in parameter values from file
-  
+
   print(paste0("Loading values of centWave parameters from previous IPO optimization run in .csv file:"))
   print(paste0(saved_IPO_params_centW))
-  
+
   centWprams.from.file = read.csv(saved_IPO_params_centW,colClasses = "character")
-  
+
   centW.min_peakwidth = as.numeric(centWprams.from.file[centWprams.from.file[,1]=="min_peakwidth",2])
   centW.max_peakwidth = as.numeric(centWprams.from.file[centWprams.from.file[,1]=="max_peakwidth",2])
   centW.ppm = as.numeric(centWprams.from.file[centWprams.from.file[,1]=="ppm",2])
@@ -412,7 +414,7 @@ if (centWparam.source==1) { # user wants to run IPO now
   centW.snthresh = as.numeric(centWprams.from.file[centWprams.from.file[,1]=="snthresh",2])
   centW.prefilter = c(as.numeric(centWprams.from.file[centWprams.from.file[,1]=="prefilter",2]),as.numeric(centWprams.from.file[centWprams.from.file[,1]=="value_of_prefilter",2]))
   centW.noise = as.numeric(centWprams.from.file[centWprams.from.file[,1]=="noise",2])
-  
+
 }
 
 # specify some additional settings we wish to keep constant, regardless of where the parameters above were obtained
@@ -422,7 +424,7 @@ centW.sleep = 1
 centW.mzCenterFun = c("wMean")
 centW.verbose.columns = TRUE
 centW.integrate = 1
-centW.profparam = list(step=0.001) # setting this very low, per Jan Stanstrup; low setting uses more memory but helps avoid the situation where mass accuracy eclipses the actual width of the m/z windows used to define each peak (a real possibility with Orbitrap data; see http://metabolomics-forum.com/viewtopic.php?f=8&t=598#p1853) 
+centW.profparam = list(step=0.001) # setting this very low, per Jan Stanstrup; low setting uses more memory but helps avoid the situation where mass accuracy eclipses the actual width of the m/z windows used to define each peak (a real possibility with Orbitrap data; see http://metabolomics-forum.com/viewtopic.php?f=8&t=598#p1853)
 centW.nSlaves = 4 # if you have r package "snow" installed, can set to number of cores you wish to make use of
 
 # ################# Peak visualization using individual sample files #############
@@ -447,7 +449,7 @@ centW.nSlaves = 4 # if you have r package "snow" installed, can set to number of
 # mzCenterFun = centW.mzCenterFun
 # #                 ,sleep = centW.sleep
 # #                 nSlaves = centW.nSlaves
-# ) 
+# )
 
 # # # despite the good press, massifquant was picking some very bad looking features, using centWave for time being instead
 
@@ -466,7 +468,7 @@ centW.nSlaves = 4 # if you have r package "snow" installed, can set to number of
 # # checkBack = 1,
 # # fitgauss = FALSE
 # # #                nSlaves = 4 # if you have r package "snow" installed, can set to number of cores you wish to make use of
-# # ) 
+# # )
 
 # # plot some selected peaks
 
@@ -493,11 +495,11 @@ centW.nSlaves = 4 # if you have r package "snow" installed, can set to number of
 
 print(paste0("Creating xcmsSet object from ",length(mzXMLfiles)," mzXML files remaining in dataset using specified settings..."))
 
-# create xcms xset object; runs WAY faster with multicore tasking enabled; 
+# create xcms xset object; runs WAY faster with multicore tasking enabled;
 
 xset_centWave = xcmsSet(mzXMLfiles,
                         method = "centWave",
-                        profparam = centW.profparam, 
+                        profparam = centW.profparam,
                         ppm = centW.ppm,
                         peakwidth = c(centW.min_peakwidth,centW.max_peakwidth),
                         fitgauss = centW.fitgauss,
@@ -519,7 +521,7 @@ print(xset_centWave)
 # Some notes:
 #
 #  1. If using massifquant or centWave and you are sure your input data are centroided, can ignore warning message "It looks like this file is in profile mode. [method] can process only centroid mode data !" since this is just based on a heuristic. That is, you can ignore the message if you are certain data are in centroid mode. You can verify this by opening one of your converted .mzXML files in a text reader. You should see: <dataProcessing centroided="1"></dataProcessing> (a "0" is bad)
-# 
+#
 #     For more on this error, see http://metabolomics-forum.com/viewtopic.php?f=8&t=267 or https://groups.google.com/forum/#!topic/xcms/xybDDQTaQiY
 #
 #  2. So long as the number of peak data insertion problems is relatively low (i.e., < 100), you can safely ignore the error. Otherwise, might try lowering the ppm
@@ -531,96 +533,96 @@ print(xset_centWave)
 #####################################################################################
 
 if (groupretcor.prams.source==1) { # user wants to run IPO now
-  
+
   ################# Use IPO to optimize some group, retcor parameters #############
-  
+
   # define ranges of parameters to be tested
-  
+
   retcorGroupParameters = getDefaultRetGroupStartingParams(retcorMethod=retcor.meth) # get defaults
-  
+
   # set some parameter ranges invididually for group.density
-  
+
   retcorGroupParameters$bw = c(3,15)
   retcorGroupParameters$minfrac = c(0.2,0.5)
   retcorGroupParameters$minsamp = 2
   retcorGroupParameters$mzwid = c(0.001,0.035)
   retcorGroupParameters$profStep = c(0.01,1)
-  
+
   if (retcor.meth=="loess") {
-    
+
     # set some parameter ranges invididually for retcor.loess, if retcor.loess was selected
-    
+
     retcorGroupParameters$missing = c(1,3)
     retcorGroupParameters$extra = c(1,3)
     retcorGroupParameters$smooth = "loess"
     retcorGroupParameters$span = c(0.1,0.3)
     retcorGroupParameters$family = "gaussian" # want to leave outliers in for the time being
     retcorGroupParameters$plottype = "none"
-    
+
   }
-  
+
   # perform optimization
-  
+
   print(paste0("Using R package IPO to optimize group() and retcor() settings with starting parameters user has specified in script."))
   print(paste0("retcor method '",retcor.meth,"' will be used..."))
-  
-  resultRetcorGroup = optimizeRetGroup(xset=xset_centWave, params=retcorGroupParameters, 
+
+  resultRetcorGroup = optimizeRetGroup(xset=xset_centWave, params=retcorGroupParameters,
                                         nSlaves=4, subdir="rsmDirectory")
-  
+
   ################# Export IPO starting value(s) and optimal settings for each parameter to .csv #############
-  
+
   # write 3-column table to .csv using write.table()
-  
+
   if (retcor.meth=="obiwarp") {
-    
+
     # have to remove resultRetcorGroup$best_settings$center and append it to the end of the concatenated matrix, since there's no option to specify it in retcorGroupParameters
-    
+
     retcorGroup.exportmat = cbind(sort(rownames(as.matrix(retcorGroupParameters))),
                                   as.character(resultRetcorGroup$best_settings[-length(resultRetcorGroup$best_settings)][sort(names(resultRetcorGroup$best_settings[-length(resultRetcorGroup$best_settings)]))]),
                                   as.character(retcorGroupParameters[sort(rownames(as.matrix(retcorGroupParameters)))]))
-    
+
     retcorGroup.exportmat = rbind(retcorGroup.exportmat,c("center",resultRetcorGroup$best_settings$center,"NA"))
-    
+
   } else if (retcor.meth=="loess") { # the same right now as in retcor.meth = "obiwarp," but leaving the option here in case we want something different in the future
-    
+
     # have to remove resultRetcorGroup$best_settings$center and append it to the end of the concatenated matrix, since there's no option to specify it in retcorGroupParameters
-    
+
     retcorGroup.exportmat = cbind(sort(rownames(as.matrix(retcorGroupParameters))),
                                   as.character(resultRetcorGroup$best_settings[-length(resultRetcorGroup$best_settings)][sort(names(resultRetcorGroup$best_settings[-length(resultRetcorGroup$best_settings)]))]),
                                   as.character(retcorGroupParameters[sort(rownames(as.matrix(retcorGroupParameters)))]))
-    
+
     retcorGroup.exportmat = rbind(retcorGroup.exportmat,c("center",resultRetcorGroup$best_settings$center,"NA"))
-    
+
   }
-  
+
   timestamp.now = print(genTimeStamp())
-  
+
   write.table(retcorGroup.exportmat,
               file = paste("IPO_retcorGroupparamfits_",timestamp.now,".csv",sep=""),
               col.names = c("retcor_or_group_parameter","IPO_optim_value","Starting_value(s)"),
               row.names = FALSE,
               sep=",")
-  
+
   print(paste0("IPO optimization complete. Optimized and starting values for"))
   print(paste0("group.density and retcor.",retcor.meth," parameters written to file:"))
   print(paste0("IPO_retcorGroupparamfits_",timestamp.now,".csv"))
-  
+
   # use the just-obtained optimized parameter values for grouping and retention time correction
-  
+
   print(paste0("Using IPO-optimized settings for group and retcor..."))
-  
+
   # settings for group.density
-  
+
   density.bw = resultRetcorGroup$best_settings$bw
   density.max = resultRetcorGroup$best_settings$max
   density.minfrac = resultRetcorGroup$best_settings$minfrac
   density.minsamp = resultRetcorGroup$best_settings$minsamp
   density.mzwid = resultRetcorGroup$best_settings$mzwid
-  
+
   # settings for selected retcor method
-  
+
   if (retcor.meth=="obiwarp") {
-    
+
     obiwarp.profStep = resultRetcorGroup$best_settings$profStep
     obiwarp.response = resultRetcorGroup$best_settings$response
     obiwarp.distFunc = resultRetcorGroup$best_settings$distFunc
@@ -629,31 +631,31 @@ if (groupretcor.prams.source==1) { # user wants to run IPO now
     obiwarp.factorDiag = resultRetcorGroup$best_settings$factorDiag
     obiwarp.factorGap = resultRetcorGroup$best_settings$factorGap
     obiwarp.localAlignment = resultRetcorGroup$best_settings$localAlignment
-    
+
   } else if (retcor.meth=="loess") {
-    
+
     loess.missing = resultRetcorGroup$best_settings$missing
     loess.extra = resultRetcorGroup$best_settings$extra
     loess.smoothing = resultRetcorGroup$best_settings$smooth
     loess.span = resultRetcorGroup$best_settings$span
     loess.family = resultRetcorGroup$best_settings$family
-    
+
   }
-  
+
 } else if (groupretcor.prams.source==2) { # user wants to use settings specified below
-  
+
   print(paste0("Using values of group and retcor parameters specified in the script by user..."))
-  
+
   # retcor.loess settings below are the function defaults
-  
+
   loess.missing = 1
   loess.extra = 1
   loess.smoothing = "loess"
   loess.span = c(0.2)
   loess.family = "gaussian" # want to leave outliers in for the time being
-  
+
   # retcor.obiwarp settings below are the function defaults
-  
+
   obiwarp.center = NULL
   obiwarp.profStep = 1
   obiwarp.response = 1
@@ -663,34 +665,34 @@ if (groupretcor.prams.source==1) { # user wants to run IPO now
   obiwarp.factorDiag = 2
   obiwarp.factorGap = 1
   obiwarp.localAlignment = 0
-  
+
   # settings for group.density below are based on the recommended HPLC/Orbitrap settings from Table 1 of Patti et al., 2012, "Meta-analysis of untargeted metabolomic data from multiple profiling experiment," Nature Protocols 7: 508-516
-  
+
   density.bw = 5 # 15?
   density.max = 50
   density.minfrac = 0.25
   density.minsamp = 2
   density.mzwid = 0.015 # 0.001?
-  
+
 } else if (groupretcor.prams.source==3) { # user wants to read in parameter values from file
-  
+
   print(paste0("Loading values of group and retcor parameters from previous IPO optimization run in .csv file:"))
   print(paste0(saved_IPO_params_groupretcor))
-  
+
   groupretcorprams.from.file = read.csv(saved_IPO_params_groupretcor,colClasses = "character")
-  
+
   # read in group.density parameter values
-  
+
   density.bw = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="bw",2])
   density.max = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="max",2])
   density.minfrac = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="minfrac",2])
   density.minsamp = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="minsamp",2])
   density.mzwid = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="mzwid",2])
-  
+
   # read in parameter values for selected retcor method
-  
+
   if (retcor.meth=="obiwarp") {
-    
+
     obiwarp.profStep = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="profStep",2])
     obiwarp.response = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="response",2])
     obiwarp.distFunc = groupretcorprams.from.file[groupretcorprams.from.file[,1]=="distFunc",2]
@@ -699,17 +701,17 @@ if (groupretcor.prams.source==1) { # user wants to run IPO now
     obiwarp.factorDiag = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="factorDiag",2])
     obiwarp.factorGap = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="factorGap",2])
     obiwarp.localAlignment = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="localAlignment",2])
-    
+
   } else if (retcor.meth=="loess") {
-    
+
     loess.missing = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="missing",2])
     loess.extra = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="extra",2])
     loess.smoothing = groupretcorprams.from.file[groupretcorprams.from.file[,1]=="smooth",2]
     loess.span = as.numeric(groupretcorprams.from.file[groupretcorprams.from.file[,1]=="span",2])
     loess.family = groupretcorprams.from.file[groupretcorprams.from.file[,1]=="family",2]
-    
+
   }
-  
+
 }
 
 # specify some additional settings we wish to keep constant, regardless of where the parameters above were obtained
@@ -734,7 +736,7 @@ print(paste0("Using group.density and retcor.",retcor.meth))
 # mzCheck=0.2,
 # rtCheck=30,
 # kNN=10
-# ) 
+# )
 
 # using method = "density" with settings from above
 
@@ -751,7 +753,7 @@ xset_gr = group(xset_centWave,
 # chromatographic alignment (retention time correction)
 
 if (retcor.meth=="loess") {
-  
+
   xset_gr.ret = retcor(xset_gr,
 #                        method = "loess", # this appears unnecessary
                         missing = loess.missing,
@@ -763,9 +765,9 @@ if (retcor.meth=="loess") {
                         col = NULL,
                         ty = NULL
   )
-    
+
 } else if (retcor.meth=="obiwarp") {
-  
+
   xset_gr.ret = retcor.peakgroups(xset_gr,
                         method = "obiwarp",
                         plottype = obiwarp.plottype,
@@ -780,7 +782,7 @@ if (retcor.meth=="loess") {
                         localAlignment = obiwarp.localAlignment,
                         initPenalty = 0
   )
-  
+
 }
 
 # perform grouping again
@@ -820,47 +822,47 @@ lockBinding("groups", imports)
 # create annotated xset using wrapper annotate(), allowing us to perform all CAMERA tasks at once
 
 xset_a = annotate(xset_gr.ret.rg.fill,
-                  
-                  quick=FALSE, # set to FALSE because we want to run groupCorr; will also cause CAMERA to run adduct annotation. while LOBSTAHS will do its own adduct identification later, it doesn't hurt to do this now if it lets CAMERA create better pseudospectra  
+
+                  quick=FALSE, # set to FALSE because we want to run groupCorr; will also cause CAMERA to run adduct annotation. while LOBSTAHS will do its own adduct identification later, it doesn't hurt to do this now if it lets CAMERA create better pseudospectra
                   sample=NA, # use all samples
                   nSlaves=4, # use 4 sockets
-                  
+
                   # group FWHM settings
                   # using defaults for now
-                  
+
                   sigma=6,
                   perfwhm=0.6,
-                  
+
                   # groupCorr settings
                   # using defaults for now
-                  
+
                   cor_eic_th=0.75,
                   graphMethod="hcs",
                   pval=0.05,
                   calcCiS=TRUE,
                   calcIso=TRUE,
                   calcCaS=FALSE, # weird results with this set to TRUE
-                  
+
                   # findIsotopes settings
-                  
+
                   maxcharge=4,
                   maxiso=4,
                   minfrac=0.5, # 0.25?
-                  
+
                   # adduct annotation settings
-                  
+
                   psg_list=NULL,
                   rules=NULL,
                   polarity=subset.polarity,
                   multiplier=3,
                   max_peaks=100,
-                  
+
                   # common to multiple tasks
-                  
+
                   intval="into",
                   ppm=2.5,
                   mzabs=0.0015
-                  
+
                   )
 
 cleanParallel(xset_a) # kill sockets

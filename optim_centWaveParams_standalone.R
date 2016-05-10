@@ -14,7 +14,7 @@
 
 # load required packages
 
-library(tools) 
+library(tools)
 
 library(xcms)
 
@@ -25,11 +25,13 @@ library(rsm)
 # run two lines below only if IPO hasn't been installed already
 
 # library(devtools)
-# install_github("glibiseller/IPO") 
+# install_github("glibiseller/IPO")
 
 library(IPO)
 
-library(snowfall) # if multicore tasking is desired
+library(snow) # if multicore tasking is desired
+
+# library(snowfall) # seems this line may be unncessary under Windows R
 
 ################# User: define locations of data files and database(s) #############
 
@@ -37,8 +39,8 @@ working_dir = "/Users/jrcollins/Dropbox/code/PtH2O2lipids/data-raw/" # specify w
 setwd(working_dir) # set working directory to working_dir
 
 # specify directories subordinate to the working directory in which the .mzXML files for xcms can be found; per xcms documentation, use subdirectories within these to divide files according to treatment/primary environmental variable (e.g., station number along a cruise transect) and file names to indicate timepoint/secondary environmental variable (e.g., depth)
-mzXMLfiles_folder_pos = "Pt_H2O2_mzXML_ms1_pos/" 
-mzXMLfiles_folder_neg = "Pt_H2O2_mzXML_ms1_neg/" 
+mzXMLfiles_folder_pos = "Pt_H2O2_mzXML_ms1_pos/"
+mzXMLfiles_folder_neg = "Pt_H2O2_mzXML_ms1_neg/"
 
 ################# Load in mzXML files #############
 
@@ -66,7 +68,7 @@ peakpickingParameters$noise <- c(500)
 # only going to use 4 0 uM H2O2 treatment files from the dataset for optimization routine
 # seems that mzXMLfiles[c(2,5)] throw up the error:
 #
-#       Error in checkForRemoteErrors(val) : 
+#       Error in checkForRemoteErrors(val) :
 #        ... nodes produced an error
 #
 # so, will use the other four files (mzXMLfiles[c(1,3,4,6)])
@@ -77,7 +79,7 @@ peakpickingParameters$noise <- c(500)
 # scan121=getScan(xcmsraw,scan=107)
 # scan121[2429,]
 
-resultPeakpicking <- optimizeXcmsSet(files= mzXMLfiles[c(1,3,4,6)], 
+resultPeakpicking <- optimizeXcmsSet(files= mzXMLfiles[c(1,3,4,6)],
                                      params=peakpickingParameters, nSlaves=4, subdir='rsmDirectory')
 optimizedXcmsSetObject <- resultPeakpicking$best_settings$xset
 
