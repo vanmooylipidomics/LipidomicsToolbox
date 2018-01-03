@@ -1,6 +1,8 @@
 #prepOrbidata_v2.R
-
-library(xcms)
+#requires: XCMS 3.0.0
+#          BioParallel
+#          snowParallel
+#          MSnbase
 
 ################ Initial setup and variable definition #############
 
@@ -20,19 +22,6 @@ library(xcms)
 library(CAMERA)
 
 library(rsm)
-
-# library(Rmpi)
-
-# run two lines below only if IPO hasn't been installed already
-
-# library(devtools)
-# install_github("glibiseller/IPO")
-
-library(IPO)
-
-# library(snowfall) # if multicore tasking is desired; seems this line may be unncessary under Windows R
-
-#library(snow) 
 
 ## Use socket based parallel processing on Windows systems
 if (.Platform$OS.type == "unix") {
