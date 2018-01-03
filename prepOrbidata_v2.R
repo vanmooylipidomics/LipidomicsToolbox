@@ -366,10 +366,13 @@ xset_a = annotate(xset,
 cleanParallel(xset_a) # kill sockets
 
 # at this point, should have an xsAnnotate object called "xset_a" in hand, which will serve as the primary input to the main screening and annotation function "doLOBscreen" in LOBSTAHS
-
 print(paste0("xsAnnotate object 'xset_a' has been created. User can now use LOBSTAHS to perform screening..."))
 
 print(xset_a)
 
+## Issue#31 fix
+xset_a@groupInfo[is.na(xset_a@groupInfo)] <- 0
+
 print(proc.time() - ptm)
+
 
