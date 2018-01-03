@@ -261,31 +261,48 @@ print(proc.time() - ptm)
 
 #### GROUPING AND RETCOR
 
-print(paste0("Doing the obiwarp alignment using the default settings...."))
+#Next we group identified chromatographic peaks across samples. We use the peak density method [@Smith:2006ic] specifying 
+#that a chromatographic peak has to be present in at least 2/3 of the samples within each group to be combined to a mz-rt feature.
 
-## plotting stuff for RT, doesnt need to be run
-rt_adjusted <- adjustRtime(centWave, param = ObiwarpParam())
-xod <- rt_adjusted
+print(paste0("Using peak density for sample groups"))
+
+pdp <- PeakDensityParam(sampleGroups = centWave$sampleNames)
+x_density <- groupChromPeaks(centWave, param = pdp)
+
+## Obiwarp
+#print(paste0("Doing the obiwarp alignment using the default settings...."))
+#rt_adjusted <- adjustRtime(x_density, param = ObiwarpParam())
+
+## Loess
+print(paste0("Doing the loess method RT alignment using the default settings...."))
+
+PeakGroupsParam(minFraction = 0.9, extraPeaks = 1, smooth = "loess",
+               span = 0.2, family = "gaussian")
+
+rt_adjusted <-adjustRtime(x_density, param = PeakGroupsParam())
 
 ## plotting difference between RT adjustment and original results
 ## Calculate the difference between the adjusted and the raw retention times.
+xod <- rt_adjusted
 diffRt <- rtime(xod) - rtime(xod, adjusted = FALSE)
 
 ## By default, rtime and most other accessor methods return a numeric vector. To
 ## get the values grouped by sample we have to split this vector by file/sample
 diffRt <- split(diffRt, fromFile(xod))
 
-boxplot(diffRt, main = "Obiwarp alignment results", ylab = "adjusted - raw rt") 
+boxplot(diffRt, main = "alignment results", ylab = "adjusted - raw rt") 
 
-#Next we group identified chromatographic peaks across samples. We use the peak density method [@Smith:2006ic] specifying 
-#that a chromatographic peak has to be present in at least 2/3 of the samples within each group to be combined to a mz-rt feature.
-pdp <- PeakDensityParam(sampleGroups = centWave$sampleNames)
-
-x_density <- groupChromPeaks(rt_adjusted, param = pdp)
+#Second round of "grouping" after RT correction
+print(paste0("Performing second peak grouping after application of retcor..."))
+x_2density <- groupChromPeaks(rt_adjusted, param = pdp)
 
 
 #fill peaks
-x_filled <- fillChromPeaks(x_density)
+x_filled <- fillChromPeaks(x_2density)
+
+#####################################################################################
+##### Isotope peak identification, creation of xsAnnotate object using CAMERA #######
+#####################################################################################
 
 #####################################################################################
 ##### Isotope peak identification, creation of xsAnnotate object using CAMERA #######
