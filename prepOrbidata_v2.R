@@ -41,6 +41,7 @@ if (.Platform$OS.type == "unix") {
     register(bpstart(SnowParam()))
 } 
 
+#timer start
 ptm <- proc.time()
 # ******************************************************************
 ################ Basic user begin editing here #############
@@ -61,14 +62,7 @@ chosenFileSubset = "Pt_H2O2_mzXML_ms1_pos/"
 
 # specify the ID numbers (i.e., Orbi_xxxx.mzXML) of any files you don't want to push through xcms (e.g., blanks); note that the blanks for the Pt H2O2 dataset (Orbi_0481.mzXML and Orbi_0482.mzXML) have already been removed
 
-excluded.mzXMLfiles = c("0475","0474") # specifying removal of Orbi_0475.mzXML and Orbi_0474.mzXML since chromatography was screwy, to the point that weird things started to happen when I used retcor() on them
-
-# if planning to use IPO, specify the ID numbers (i.e., Orbi_xxxx.mzXML) of the files you'd like to use for optimization; otherwise, IPO will try to use the entire dataset and you'll probably wind up with errors
-
-# if you aren't planning on running IPO to optimize centWave and/or group/retcor parameters this session, but you have some parameter values from an earlier IPO run saved in a .csv file, you can specify the file paths below. you will still be given the option later to choose which parameters to use.
-
-
-
+excluded.mzXMLfiles = c("0475","0474") # Jamie's notes: specifying removal of Orbi_0475.mzXML and Orbi_0474.mzXML since chromatography was screwy, to the point that weird things started to happen when I used retcor() on them
 
 ################# Define functions; run me first #############
 # readinteger: for a given prompt, allows capture of user input as an integer; rejects non-integer input
@@ -243,6 +237,10 @@ if (exists("excluded.mzXMLfiles") & length("excluded.mzXMLfiles")>0) {
   
 }
 
+###############################################
+############NEW STUFF STARTS HERE##############
+###############################################
+
 
 ##### PEAK PICKING
 print(paste0("Using values of centWave parameters specified by Jamie for peak picking..."))
@@ -267,13 +265,14 @@ print(paste0("Peak picking completed"))
 print(centWave)
 plotChromPeakImage(centWave) 
 
+#print timer
 print(proc.time() - ptm)
 
 #### GROUPING AND RETCOR
 
 print(paste0("Doing the obiwarp alignment using the default settings...."))
 
-## 
+## plotting stuff for RT, doesnt need to be run
 rt_adjusted <- adjustRtime(centWave, param = ObiwarpParam())
 xod <- rt_adjusted
 
@@ -373,6 +372,7 @@ print(xset_a)
 ## Issue#31 fix
 xset_a@groupInfo[is.na(xset_a@groupInfo)] <- 0
 
+#print timer
 print(proc.time() - ptm)
 
 
