@@ -319,7 +319,7 @@ lockBinding("groups", imports)
 
 # create annotated xset using wrapper annotate(), allowing us to perform all CAMERA tasks at once
 
-xset_a = annotate(xset_gr.ret.rg.fill,
+xset_a = annotate(xset,
                   
                   quick=FALSE, # set to FALSE because we want to run groupCorr; will also cause CAMERA to run adduct annotation. while LOBSTAHS will do its own adduct identification later, it doesn't hurt to do this now if it lets CAMERA create better pseudospectra
                   sample=NA, # use all samples
