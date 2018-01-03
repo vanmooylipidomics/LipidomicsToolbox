@@ -53,6 +53,8 @@ chosenFileSubset = "Pt_H2O2_mzXML_ms1_pos/"
 
 excluded.mzXMLfiles = c("0475","0474") # Jamie's notes: specifying removal of Orbi_0475.mzXML and Orbi_0474.mzXML since chromatography was screwy, to the point that weird things started to happen when I used retcor() on them
 
+## ONCE EDITS ARE COMPLETED, SAVE AND HIT "SOURCE" IN RSTUDIO TO RUN THE REST OF THE SCRIPT
+
 ################# Define functions; run me first #############
 # readinteger: for a given prompt, allows capture of user input as an integer; rejects non-integer input
 
