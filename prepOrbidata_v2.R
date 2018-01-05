@@ -300,9 +300,7 @@ x_2density <- groupChromPeaks(rt_adjusted, param = pdp)
 #fill peaks
 x_filled <- fillChromPeaks(x_2density)
 
-#####################################################################################
-##### Isotope peak identification, creation of xsAnnotate object using CAMERA #######
-#####################################################################################
+
 
 #####################################################################################
 ##### Isotope peak identification, creation of xsAnnotate object using CAMERA #######
