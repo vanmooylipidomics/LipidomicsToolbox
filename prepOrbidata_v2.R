@@ -23,6 +23,10 @@ library(CAMERA)
 
 library(rsm)
 
+library(BiocParallel)
+
+library(snow)
+
 ## Use socket based parallel processing on Windows systems
 if (.Platform$OS.type == "unix") {
     register(bpstart(MulticoreParam()))
@@ -52,6 +56,49 @@ chosenFileSubset = "Pt_H2O2_mzXML_ms1_pos/"
 # specify the ID numbers (i.e., Orbi_xxxx.mzXML) of any files you don't want to push through xcms (e.g., blanks); note that the blanks for the Pt H2O2 dataset (Orbi_0481.mzXML and Orbi_0482.mzXML) have already been removed
 
 excluded.mzXMLfiles = c("0475","0474") # Jamie's notes: specifying removal of Orbi_0475.mzXML and Orbi_0474.mzXML since chromatography was screwy, to the point that weird things started to happen when I used retcor() on them
+
+######### PREPROCESSING PARAMETERS ##############
+
+## PEAK PICKING
+#centWave parameters
+centW.min_peakwidth = 10
+centW.max_peakwidth = 45 # lowered from Patti et al. recommended HPLC setting of 60 based on visual inspection of a single sample with plotPeaks
+centW.ppm = 2.5   #defining the maximal tolerated m/z deviation in consecutive scans in parts per million (ppm) for the initial ROI definition.
+centW.mzdiff = 0.005  # the minimum difference in m/z dimension for peaks with overlapping retention times; can be negatove to allow overlap.
+centW.snthresh = 10   #defining the signal to noise ratio cutoff.
+centW.prefilter = c(3,7500) # 3.5k recommended by Patti et al. appears to be too low
+centW.noise = 500  #allowing to set a minimum intensity required for centroids to be considered in the first analysis step (centroids with intensity < noise are omitted from ROI detection).
+#centWave constant parameters
+centW.fitgauss = TRUE
+#centW.sleep = 1 depreciated
+centW.mzCenterFun = c("wMean")
+centW.verbose.columns = TRUE
+centW.integrate = 1
+#centW.profparam = list(step=0.001) # not available in xcms3
+#centW.nSlaves = 4 # depreciated
+plotcentwave =FALSE
+
+##GROUPING
+#density
+# settings for group.density below are based on the recommended HPLC/Orbitrap settings from Table 1 of Patti et al., 2012, 
+#"Meta-analysis of untargeted metabolomic data from multiple profiling experiment," Nature Protocols 7: 508-516
+density.bw = 5 # 15?
+density.max = 50
+density.minfrac = 0.25
+density.minsamp = 1 ### minsamp 2 does not work with groupchrom
+density.mzwid = 0.015 # 0.001?
+
+##RETCOR
+# retcor.loess settings below are the function defaults
+lowess.minfrac =0.9 #numeric(1) between 0 and 1 defining the minimum required fraction of samples in which peaks for the peak group were identified. 
+#Peak groups passing this criteria will aligned across samples and retention times of individual spectra will be adjusted based on this alignment. 
+#For minFraction = 1 the peak group has to contain peaks in all samples of the experiment.
+loess.extra = 1     #numeric(1) defining the maximal number of additional peaks for all samples to be assigned to a peak group (i.e. feature) for retention time correction. For a data set with 6 samples, extraPeaks = 1 uses all peak groups with a total peak count <= 6 + 1. 
+#The total peak count is the total number of peaks being assigned to a peak group and considers also multiple peaks within a sample being assigned to the group.
+loess.smoothing = "loess"
+loess.span = c(0.2) #defining the degree of smoothing
+loess.family = "gaussian" # want to leave outliers in for the time being
+
 
 ## ONCE EDITS ARE COMPLETED, SAVE AND HIT "SOURCE" IN RSTUDIO TO RUN THE REST OF THE SCRIPT
 
@@ -241,11 +288,10 @@ print(paste0("Using values of centWave parameters specified by Jamie for peak pi
 rawSpec   <- MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk", msLevel = 1)
 
 #format centwave parameters
-cwp <- CentWaveParam(snthresh = 10, 
-                     noise = 500, 
-                     ppm= 2.5, 
-                     mzdiff = 0.005, 
-                     prefilter = c(3,7500))
+cwp <- CentWaveParam(snthresh = centW.snthresh, noise = centW.noise, ppm= centW.ppm, mzdiff = centW.mzdiff, 
+                     prefilter = centW.prefilter, peakwidth = c(centW.min_peakwidth,centW.max_peakwidth), fitgauss = centW.fitgauss,
+                     mzCenterFun = centW.mzCenterFun, verboseColumns = centW.verbose.columns, integrate = centW.integrate
+                     )
 
 #find peaks
 centWave <- findChromPeaks(rawSpec, param = cwp)
@@ -254,7 +300,10 @@ centWave <- findChromPeaks(rawSpec, param = cwp)
 print(paste0("Peak picking completed"))
 
 print(centWave)
-plotChromPeakImage(centWave) 
+
+if (plotcentwave == TRUE) {
+   plotChromPeakImage(centWave) 
+}
 
 #print timer
 print(proc.time() - ptm)
@@ -266,7 +315,11 @@ print(proc.time() - ptm)
 
 print(paste0("Using peak density for sample groups"))
 
-pdp <- PeakDensityParam(sampleGroups = centWave$sampleNames)
+pdp <- PeakDensityParam(sampleGroups = centWave$sampleNames,
+                        bw = density.bw, minFraction = density.minfrac, minSamples = density.minsamp, 
+                        binSize = density.mzwid, maxFeatures = density.max)
+
+                        
 x_density <- groupChromPeaks(centWave, param = pdp)
 
 ## Obiwarp
@@ -274,10 +327,9 @@ x_density <- groupChromPeaks(centWave, param = pdp)
 #rt_adjusted <- adjustRtime(x_density, param = ObiwarpParam())
 
 ## Loess
-print(paste0("Doing the loess method RT alignment using the default settings...."))
-
-PeakGroupsParam(minFraction = 0.9, extraPeaks = 1, smooth = "loess",
-               span = 0.2, family = "gaussian")
+print(paste0("Doing the loess method RT alignment using the defined settings...."))
+PeakGroupsParam(minFraction = lowess.minfrac, extraPeaks = loess.extra, smooth = loess.smoothing,
+               span = loess.span, family = loess.family)
 
 rt_adjusted <-adjustRtime(x_density, param = PeakGroupsParam())
 
@@ -298,7 +350,20 @@ x_2density <- groupChromPeaks(rt_adjusted, param = pdp)
 
 
 #fill peaks
-x_filled <- fillChromPeaks(x_2density)
+print(paste0("Filling peaks..."))
+#x_filled <- fillChromPeaks(x_2density, BPPARAM = BPPARAM_fillpeaks)
+
+## convert to xset and correct for missing values
+xset <- x_2density
+xset <-as(xset, "xcmsSet")
+
+## important! you might want to set/adjust the 'sampclass' of the returned xcmSet object before proceeding with the analysis.
+## XCMSnExp saves this as "sampleNames" so we will copy from that
+xset$class <- centWave$sampleNames
+
+#run fill peaks on xset, use all cores -2 and with memory allocation from multiple of 4
+BPPARAM_fillpeaks <- MulticoreParam(min(detectCores()-2,4), progressbar = TRUE)
+xset_fill <- do.call(fillPeaks,list(object = xset,BPPARAM = BPPARAM_fillpeaks))
 
 
 
@@ -306,13 +371,6 @@ x_filled <- fillChromPeaks(x_2density)
 ##### Isotope peak identification, creation of xsAnnotate object using CAMERA #######
 #####################################################################################
 
-## convert to xset and correct for missing values
-xset <- x_filled
-xset <-as(xset, "xcmsSet")
-
-## important! you might want to set/adjust the 'sampclass' of the returned xcmSet object before proceeding with the analysis.
-## XCMSnExp saves this as "sampleNames" so we will copy from that
-xset$class <- centWave$sampleNames
 
 print(paste0("Applying CAMERA to identify isotopic peaks, create xsAnnotate object, and create CAMERA pseudospectra using correlation of xcms peak groups between and within samples. These pseudospectra are the groups within which the adduct hierarchy and retention time screening criteria will be applied using LOBSTAHS"))
 
@@ -324,7 +382,7 @@ lockBinding("groups", imports)
 
 # create annotated xset using wrapper annotate(), allowing us to perform all CAMERA tasks at once
 
-xset_a = annotate(xset,
+xset_a = annotate(xset_fill,
                   
                   quick=FALSE, # set to FALSE because we want to run groupCorr; will also cause CAMERA to run adduct annotation. while LOBSTAHS will do its own adduct identification later, it doesn't hurt to do this now if it lets CAMERA create better pseudospectra
                   sample=NA, # use all samples
