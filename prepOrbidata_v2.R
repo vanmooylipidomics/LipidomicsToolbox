@@ -47,15 +47,19 @@ setwd(working_dir) # set working directory to working_dir
 
 # specify directories subordinate to the working directory in which the .mzXML files for xcms can be found; per xcms documentation, use subdirectories within these to divide files according to treatment/primary environmental variable (e.g., station number along a cruise transect) and file names to indicate timepoint/secondary environmental variable (e.g., depth)
 
-mzXMLdirs = c("Pt_H2O2_mzXML_ms1_pos/","Pt_H2O2_mzXML_ms1_neg/")
+mzXMLdirs = c("Pt_H2O2_mzXML_ms1_pos/","Pt_H2O2_mzXML_ms1_neg/", "deut_stds/")
 
 # specify which of the directories above you wish to analyze this time through
 
-chosenFileSubset = "Pt_H2O2_mzXML_ms1_pos/"
+chosenFileSubset = "deut_stds/"
 
 # specify the ID numbers (i.e., Orbi_xxxx.mzXML) of any files you don't want to push through xcms (e.g., blanks); note that the blanks for the Pt H2O2 dataset (Orbi_0481.mzXML and Orbi_0482.mzXML) have already been removed
 
-excluded.mzXMLfiles = c("0475","0474") # Jamie's notes: specifying removal of Orbi_0475.mzXML and Orbi_0474.mzXML since chromatography was screwy, to the point that weird things started to happen when I used retcor() on them
+#excluded.mzXMLfiles = c("0475","0474") # specifying removal of Orbi_0475.mzXML and Orbi_0474.mzXML since chromatography was screwy, to the point that weird things started to happen when I used retcor() on them
+excluded.mzXMLfiles = c("QE005375_blank") #excluded blank this run
+# if planning to use IPO, specify the ID numbers (i.e., Orbi_xxxx.mzXML) of the files you'd like to use for optimization; otherwise, IPO will try to use the entire dataset and you'll probably wind up with errors
+
+# if you aren't planning on running IPO to optimize centWave and/or group/retcor parameters this session, but you have some parameter values from an earlier IPO run saved in a .csv file, you can specify the file paths below. you will still be given the option later to choose which parameters to use.
 
 ######### PREPROCESSING PARAMETERS ##############
 
@@ -76,7 +80,7 @@ centW.verbose.columns = TRUE
 centW.integrate = 1
 #centW.profparam = list(step=0.001) # not available in xcms3
 #centW.nSlaves = 4 # depreciated
-plotcentwave =FALSE
+plotcentwave =TRUE
 
 ##GROUPING
 #density
@@ -350,8 +354,9 @@ x_2density <- groupChromPeaks(rt_adjusted, param = pdp)
 
 
 #fill peaks
-print(paste0("Filling peaks..."))
-#x_filled <- fillChromPeaks(x_2density, BPPARAM = BPPARAM_fillpeaks)
+#print(paste0("Filling peaks..."))
+#BPPARAM_fillpeaks <- MulticoreParam(min(detectCores()-2,4), progressbar = TRUE)
+#x_filled <- fillChromPeaks(x_2density, BPPARAM=BPPARAM_fillpeaks)
 
 ## convert to xset and correct for missing values
 xset <- x_2density
@@ -361,7 +366,7 @@ xset <-as(xset, "xcmsSet")
 ## XCMSnExp saves this as "sampleNames" so we will copy from that
 xset$class <- centWave$sampleNames
 
-#run fill peaks on xset, use all cores -2 and with memory allocation from multiple of 4
+
 BPPARAM_fillpeaks <- MulticoreParam(min(detectCores()-2,4), progressbar = TRUE)
 xset_fill <- do.call(fillPeaks,list(object = xset,BPPARAM = BPPARAM_fillpeaks))
 

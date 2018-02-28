@@ -85,7 +85,7 @@ mzXMLdirs = c("Pt_H2O2_mzXML_ms1_pos/","Pt_H2O2_mzXML_ms1_neg/")
 
 # specify which of the directories above you wish to analyze this time through
 
-chosenFileSubset = "Pt_H2O2_mzXML_ms1_pos/"
+chosenFileSubset = "Pt_H2O2_mzXML_ms1_neg/"
 
 # specify the ID numbers (i.e., Orbi_xxxx.mzXML) of any files you don't want to push through xcms (e.g., blanks); note that the blanks for the Pt H2O2 dataset (Orbi_0481.mzXML and Orbi_0482.mzXML) have already been removed
 
@@ -833,7 +833,7 @@ lockBinding("groups", imports)
 
 
 #register(MulticoreParam(4))
-xset_a = annotate(xset_gr.ret.rg.fill,
+xset_b = annotate(xset_gr.ret.rg.fill,
 
                   quick=FALSE, # set to FALSE because we want to run groupCorr; will also cause CAMERA to run adduct annotation. while LOBSTAHS will do its own adduct identification later, it doesn't hurt to do this now if it lets CAMERA create better pseudospectra
                   sample=NA, # use all samples
@@ -879,10 +879,10 @@ xset_a = annotate(xset_gr.ret.rg.fill,
 
                   )
 
-cleanParallel(xset_a) # kill sockets
+cleanParallel(xset_b) # kill sockets
 
 # at this point, should have an xsAnnotate object called "xset_a" in hand, which will serve as the primary input to the main screening and annotation function "doLOBscreen" in LOBSTAHS
 
 print(paste0("xsAnnotate object 'xset_a' has been created. User can now use LOBSTAHS to perform screening..."))
 
-print(xset_a)
+print(xset_b)
