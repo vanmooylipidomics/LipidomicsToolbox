@@ -1,0 +1,411 @@
+#prepOrbidata_v2.R
+#requires: XCMS 3.0.0
+#          BioParallel
+#          snowParallel
+#          MSnbase
+
+################ Initial setup and variable definition #############
+
+# run this section before specifying user settings, below
+
+# clear workspace
+#
+# WS = c(ls())
+# rm(WS, list = WS)
+
+# load required packages
+
+library(tools)
+
+library(xcms)
+
+library(CAMERA)
+
+library(rsm)
+
+library(BiocParallel)
+
+library(snow)
+
+
+## Use socket based parallel processing on Windows systems
+if (.Platform$OS.type == "unix") {
+    register(bpstart(MulticoreParam()))
+} else {
+    register(bpstart(SnowParam()))
+} 
+
+#timer start
+ptm <- proc.time()
+# ******************************************************************
+################ Basic user begin editing here #############
+# ******************************************************************
+
+################ User: define locations of data files and database(s) #############
+
+working_dir = "/home/tyronelee/PtH2O2lipids/mzXML" # specify working directory
+setwd(working_dir) # set working directory to working_dir
+
+# specify directories subordinate to the working directory in which the .mzXML files for xcms can be found; per xcms documentation, use subdirectories within these to divide files according to treatment/primary environmental variable (e.g., station number along a cruise transect) and file names to indicate timepoint/secondary environmental variable (e.g., depth)
+
+mzXMLdirs = c("Pt_H2O2_mzXML_ms1_pos/","Pt_H2O2_mzXML_ms1_neg/", "deut_stds/")
+
+# specify which of the directories above you wish to analyze this time through
+
+chosenFileSubset = "deut_stds/"
+
+# specify the ID numbers (i.e., Orbi_xxxx.mzXML) of any files you don't want to push through xcms (e.g., blanks); note that the blanks for the Pt H2O2 dataset (Orbi_0481.mzXML and Orbi_0482.mzXML) have already been removed
+
+#excluded.mzXMLfiles = c("0475","0474") # specifying removal of Orbi_0475.mzXML and Orbi_0474.mzXML since chromatography was screwy, to the point that weird things started to happen when I used retcor() on them
+excluded.mzXMLfiles = c("QE005375_blank") #excluded blank this run
+# if planning to use IPO, specify the ID numbers (i.e., Orbi_xxxx.mzXML) of the files you'd like to use for optimization; otherwise, IPO will try to use the entire dataset and you'll probably wind up with errors
+
+# if you aren't planning on running IPO to optimize centWave and/or group/retcor parameters this session, but you have some parameter values from an earlier IPO run saved in a .csv file, you can specify the file paths below. you will still be given the option later to choose which parameters to use.
+
+#USE THIS FLAG TO LAUNCH GUI
+use_cent_gui = TRUE
+
+
+#####shiny code
+doshiny <- function() {
+  app=shinyApp(
+    ui = fluidPage(
+      column(
+        width = 6,
+        numericInput('ppm', 'ppm',"2.5",step = 0.1),
+        numericInput('min_peakwidth', 'min_peakwidth',"20"),
+        numericInput('max_peakwidth', 'max_peakwidth',"150"),
+        numericInput('mzdiff', 'mzdiff',"0.005",step = .005),
+        numericInput('snthresh', 'snthresh',"50"),
+        numericInput('prefilter_k', 'prefilter at least k peaks',"3"),
+        numericInput('prefilter_I', 'prefilter >=I',"100"),
+        numericInput('noise', 'noise',"500"),
+        selectInput('mzCenterFunc', 'mzCenterFunction2',c("Intensity Weighted Mean" = "wMean",
+                                                          "Intensity Mean" = "mean",
+                                                          "Peak Apex" = "apex",
+                                                          "Weighted Mean Apex" = "wMeanApex3",
+                                                          "Mean Apex" = "meanApex3")),
+        #selectInput('fitgauss', 'fit gauss',c("true" = TRUE, "false" = FALSE)),
+        #selectInput('verbose_columns', 'verbose_Columns',c("true" = TRUE, "false" = FALSE)),
+        selectInput('intergrate', 'intergate',c("Mexican Hat function" = 1, "raw function" = 2)),
+        checkboxInput('fitgauss', 'Fit Gauss', value = TRUE, width = 5),
+        checkboxInput('verbosecol', 'Verbose Columns', value = TRUE, width = NULL)
+      ),
+      column(
+        width = 6,
+        tags$p("Centwave Params :", tags$span(id = "valueA", "")),
+        tags$script(
+          "$(document).on('shiny:inputchanged', function(event) {
+          if (event.name === 'a') {
+            $('#valueA').text(event.value);
+          }
+        });
+        "
+        ),
+        tableOutput('show_inputs'),
+        textOutput('list_inputs'),
+        actionButton("ending","Done")
+      )
+      
+    ),
+    server = function(input, output, session) {
+      
+      AllInputs <- reactive({
+        x <- reactiveValuesToList(input)
+        data.frame(
+          names = names(x),
+          values = unlist(x, use.names = FALSE)
+        )
+      })
+      
+      output$show_inputs <- renderTable({
+        AllInputs()
+      })
+      
+      output$list_inputs <- renderText({ 
+        paste("CentWaveParam(snthresh = ", input$fitgauss, ", noise = ", input$noise, ", ppm= ",input$ppm," mzdiff = centW.mzdiff, 
+                     prefilter = centW.prefilter, peakwidth = c(centW.min_peakwidth,centW.max_peakwidth), fitgauss = centW.fitgauss,
+                     mzCenterFun = centW.mzCenterFun, verboseColumns = centW.verbose.columns, integrate = centW.integrate
+                     )")
+        paste("is fitgauss logical? ", is(input$fitgauss, "logical"))
+      })
+      observeEvent(input$ending, {
+        cwp <- CentWaveParam(snthresh = input$snthresh, noise = input$noise, ppm= input$ppm, mzdiff = centW.mzdiff,
+                             prefilter = c(input$prefilter_k, input$prefilter_I), peakwidth = c(input$min_peakwidth,input$max_peakwidth), fitgauss = input$fitgauss,
+                             mzCenterFun = input$mzCenterFunc, verboseColumns = input$verbosecol, integrate = input$intergrate)
+        stopApp(cwp)
+      })
+    }
+  )
+  runApp(app)
+}
+
+
+
+######### PREPROCESSING PARAMETERS ##############
+
+## PEAK PICKING
+#centWave parameters
+centW.min_peakwidth = 10
+centW.max_peakwidth = 45 # lowered from Patti et al. recommended HPLC setting of 60 based on visual inspection of a single sample with plotPeaks
+centW.ppm = 2.5   #defining the maximal tolerated m/z deviation in consecutive scans in parts per million (ppm) for the initial ROI definition.
+centW.mzdiff = 0.005  # the minimum difference in m/z dimension for peaks with overlapping retention times; can be negatove to allow overlap.
+centW.snthresh = 10   #defining the signal to noise ratio cutoff.
+centW.prefilter = c(3,7500) # 3.5k recommended by Patti et al. appears to be too low
+centW.noise = 500  #allowing to set a minimum intensity required for centroids to be considered in the first analysis step (centroids with intensity < noise are omitted from ROI detection).
+#centWave constant parameters
+centW.fitgauss = TRUE
+#centW.sleep = 1 depreciated
+centW.mzCenterFun = c("wMean")
+centW.verbose.columns = TRUE
+centW.integrate = 1
+#centW.profparam = list(step=0.001) # not available in xcms3
+#centW.nSlaves = 4 # depreciated
+plotcentwave =TRUE
+
+##GROUPING
+#density
+# settings for group.density below are based on the recommended HPLC/Orbitrap settings from Table 1 of Patti et al., 2012, 
+#"Meta-analysis of untargeted metabolomic data from multiple profiling experiment," Nature Protocols 7: 508-516
+density.bw = 5 # 15?
+density.max = 50
+density.minfrac = 0.25
+density.minsamp = 1 ### minsamp 2 does not work with groupchrom
+density.mzwid = 0.015 # 0.001?
+
+##RETCOR
+# retcor.loess settings below are the function defaults
+lowess.minfrac =0.9 #numeric(1) between 0 and 1 defining the minimum required fraction of samples in which peaks for the peak group were identified. 
+#Peak groups passing this criteria will aligned across samples and retention times of individual spectra will be adjusted based on this alignment. 
+#For minFraction = 1 the peak group has to contain peaks in all samples of the experiment.
+loess.extra = 1     #numeric(1) defining the maximal number of additional peaks for all samples to be assigned to a peak group (i.e. feature) for retention time correction. For a data set with 6 samples, extraPeaks = 1 uses all peak groups with a total peak count <= 6 + 1. 
+#The total peak count is the total number of peaks being assigned to a peak group and considers also multiple peaks within a sample being assigned to the group.
+loess.smoothing = "loess"
+loess.span = c(0.2) #defining the degree of smoothing
+loess.family = "gaussian" # want to leave outliers in for the time being
+
+
+## ONCE EDITS ARE COMPLETED, SAVE AND HIT "SOURCE" IN RSTUDIO TO RUN THE REST OF THE SCRIPT
+
+################# Define functions; run me first #############
+
+##################run centparam tweaker
+
+#tweak_centwave <- function() {
+#  doshiny()
+#  print("Finished.")
+#}
+
+tweak_centwave <- function() {
+  doshiny()
+  print("Finished tweaks, using user defined centwave parameters")
+}
+
+# readinteger: for a given prompt, allows capture of user input as an integer; rejects non-integer input
+
+readinteger = function(prompttext) {
+  
+  n = readline(prompt=prompttext)
+  
+  if (!grepl("^[0-9]+$", n)) {
+    
+    return(readinteger(prompttext))
+    
+  }
+  
+  as.integer(n)
+  
+}
+
+# readyesno: for a given prompt, allows capture of user input as y or n; rejects other input
+
+readyesno = function(prompttext) {
+  
+  n = readline(prompt=prompttext)
+  
+  if (!grepl("y|n", n)) {
+    
+    return(readyesno(prompttext))
+    
+  }
+  
+  as.character(n)
+  
+}
+
+
+# verifyFileIonMode: return the ion mode of data in a particular mzXML file, by examining "polarity" attribute of each scan in the file
+
+verifyFileIonMode = function(mzXMLfile) {
+  
+  rawfile = xcmsRaw(mzXMLfile) # create an xcmsraw object out of the first file
+  
+  # determine ion mode by examining identifier attached to scan events
+  
+  if (table(rawfile@polarity)["negative"]==0 & (table(rawfile@polarity)["positive"]==length(rawfile@scanindex))) { # can deduce that the file contains positive mode data
+    
+    filepolarity = 1 # positive
+    
+  } else if (table(rawfile@polarity)["positive"]==0 & (table(rawfile@polarity)["negative"]==length(rawfile@scanindex))) { # probably negative mode data
+    
+    filepolarity = -1 # negative
+    
+  } else if (table(rawfile@polarity)["positive"]>=1 & table(rawfile@polarity)["negative"]>=1) { # scans of both mode present in the file; the original .raw files weren't split by mode during initial .mzXML conversion, or something else is wrong
+    
+    stop("At least one file in the current dataset contains scans of more than one ion mode. Please ensure data for different ion modes have been extracted into separate files. Stopping...") # stop script if this is the case
+    
+  } else if (table(rawfile@polarity)["positive"]==0 & table(rawfile@polarity)["negative"]==0) {
+    
+    stop("Can't determine ion mode of data in the first file. Check manner in which files were converted. Stopping...") # stop script if this is the case
+    
+  }
+  
+  filepolarity
+  
+}
+
+# getSubsetIonMode: return the ion mode of a subset of files, using sapply of verifyFileIonMode
+
+getSubsetIonMode = function(mzXMLfilelist) {
+  
+  ionmodecount = sum(sapply(mzXMLfilelist, verifyFileIonMode)) # get sum of ion mode indicators for the files in the subset
+  
+  if (ionmodecount==length(mzXMLfilelist)) { # can conclude that all files contain positive mode data
+    
+    subset.polarity = "positive"
+    
+  } else if (ionmodecount==-length(mzXMLfilelist)) { # can conclude that all files contain negative mode data
+    
+    subset.polarity = "negative"
+    
+  }
+  
+  subset.polarity
+  
+}
+
+# selectXMLSubDir: allows user to choose which subset of files to process
+
+selectXMLSubDir = function(mzXMLdirList) {
+  
+  print(paste0("mzXML files exist in the following directories:"))
+  
+  for (i in 1:length(mzXMLdirList)) {
+    
+    # get number of mzXML files in this directory
+    numGoodFiles = length(list.files(mzXMLdirList[i], recursive = TRUE, full.names = TRUE, pattern = "*(.mzXML|.mzxml)"))
+    
+    if (numGoodFiles>0) { # there are .mzXML data files in this directory
+      
+      print(paste0(i, ". ", numGoodFiles," .mzXML files in directory '",mzXMLdirList[i],"'"))
+      
+    }
+    
+  }
+  
+  processDecision = readinteger("Specify which subset you'd like to process, using integer input: ")
+  
+  mzXMLdirList[processDecision]
+  
+}
+
+# getFNmatches: returns index(es) of file names in a given file list containing the ID numbers in a match list
+
+getFNmatches = function(filelist,IDnumlist) {
+  
+  unique(grep(paste(IDnumlist,collapse="|"),filelist, value=FALSE))
+  
+}
+
+# genTimeStamp: generates a timestamp string based on the current system time
+
+genTimeStamp = function () {
+  
+  output_DTG = format(Sys.time(), "%Y-%m-%dT%X%z") # return current time in a good format
+  output_DTG = gsub(" ", "_", output_DTG) # replace any spaces
+  output_DTG = gsub(":", "-", output_DTG) # replaces any colons with dashes (Mac compatibility)
+  
+}
+
+# check to make sure user has specified at least something in mzXMLdirs
+
+if (!exists("mzXMLdirs")) {
+  
+  stop("User has not specified any directories containing mzXML files. Specify a value for mzXMLdirs.")
+  
+}
+
+################# Load in mzXML files, get xcms settings from IPO or user input #############
+
+cat(sprintf("PrepOrbit.R running on maximum %d cores for defined dataset",
+            ifelse(length(detectCores()), 
+                   cores <- detectCores()[1],
+                   cores <- 1)))
+
+# load selected subset for processing
+
+mzXMLfiles.raw = list.files(chosenFileSubset, recursive = TRUE, full.names = TRUE)
+
+# verify the ion mode of the data in these files
+
+subset.polarity = getSubsetIonMode(mzXMLfiles.raw)
+
+# provide some feedback to user
+
+print(paste0("Loaded ",length(mzXMLfiles.raw)," mzXML files. These files contain ",subset.polarity," ion mode data. Raw dataset consists of:"))
+
+print(mzXMLfiles.raw)
+
+# check whether user has elected to exclude any files, and exclude them if they happen to be in this subset
+
+if (exists("excluded.mzXMLfiles") & length("excluded.mzXMLfiles")>0) {
+  
+  excludedfiles = getFNmatches(IDnumlist = excluded.mzXMLfiles, filelist = mzXMLfiles.raw) # index files to be excluded
+  
+  print(paste0("The following files will be excluded from processing based on user's input:"))
+  print(mzXMLfiles.raw[excludedfiles])
+  
+  mzXMLfiles = mzXMLfiles.raw[-excludedfiles] # exclude the files from mzXMLfiles
+  
+} else {
+  
+  mzXMLfiles = mzXMLfiles.raw
+  
+}
+
+###############################################
+############NEW STUFF STARTS HERE##############
+###############################################
+
+
+##### PEAK PICKING
+
+#read in only msLevel1
+#rawSpec   <- MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk", msLevel = 1)
+
+
+if (use_cent_gui==TRUE){
+  cwp<-doshiny()
+  
+} else {
+  print(paste0("Using DEFAULT values of centWave parameters for peak picking..."))
+  #format centwave parameters
+  cwp <- CentWaveParam(snthresh = centW.snthresh, noise = centW.noise, ppm= centW.ppm, mzdiff = centW.mzdiff, 
+                       prefilter = centW.prefilter, peakwidth = c(centW.min_peakwidth,centW.max_peakwidth), fitgauss = centW.fitgauss,
+                       mzCenterFun = centW.mzCenterFun, verboseColumns = centW.verbose.columns, integrate = centW.integrate
+  )
+  
+}
+
+
+#find peaks
+#centWave <- findChromPeaks(rawSpec, param = cwp)
+
+
+print(cwp)
+
+
+#print timer
+print(proc.time() - ptm)
+
+#### GROUPING AND RETCOR
