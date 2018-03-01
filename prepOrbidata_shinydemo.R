@@ -27,6 +27,8 @@ library(BiocParallel)
 
 library(snow)
 
+library(shiny)
+
 
 ## Use socket based parallel processing on Windows systems
 if (.Platform$OS.type == "unix") {
