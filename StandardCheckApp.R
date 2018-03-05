@@ -66,9 +66,9 @@ makeStandardTable = function(obj, mz, ppm, rtlow, rthigh) {
   
   ascharacters <- as.data.frame(lapply(reordered, as.character), stringsAsFactors = FALSE)
   
- Done <- head(do.call(rbind, by(ascharacters, reordered$name, rbind, "")), -1 )
+  Done <- head(do.call(rbind, by(ascharacters, reordered$name, rbind, "")), -1 )
   
- # Done <- reordered
+  # Done <- reordered
   
   colnames(Done)[1] <- "Sample Number"
   colnames(Done)[2] <- "Sample Name"
@@ -188,7 +188,7 @@ ui <- shinyUI(fluidPage(
       
     ),
     
-      #Add click button here.
+    #Add click button here.
     
     mainPanel(
       tabsetPanel(
@@ -202,57 +202,57 @@ ui <- shinyUI(fluidPage(
 
 ### server - The code behind the UI
 server <- function(input, output) {
-
-### Combinded Code ###
-
-  observeEvent(eventExpr = input$runtest, {
-  mz <- if(is.na(input$mz) == TRUE){
-            dropdown["mz",as.vector(input$list)]
-        } else {
-          input$mz
-        }
-  ppm <- if(is.na(input$ppm) == TRUE){
-            dropdown["ppm",as.vector(input$list)]
-          } else {
-            input$ppm
-          }
-  rtlow <- if(is.na(input$rtmin) == TRUE){
-            dropdown["rtlow",as.vector(input$list)]
-          } else {
-            input$rtmin
-          }
-  rthigh <- if(is.na(input$rtmax) == TRUE){
-            dropdown["rthigh",as.vector(input$list)]
-          } else {
-            input$rtmax
-          }
   
-  output$table <- renderTable(makeStandardTable(obj = centWave,
+  ### Combinded Code ###
+  
+  observeEvent(eventExpr = input$runtest, {
+    mz <- if(is.na(input$mz) == TRUE){
+      dropdown["mz",as.vector(input$list)]
+    } else {
+      input$mz
+    }
+    ppm <- if(is.na(input$ppm) == TRUE){
+      dropdown["ppm",as.vector(input$list)]
+    } else {
+      input$ppm
+    }
+    rtlow <- if(is.na(input$rtmin) == TRUE){
+      dropdown["rtlow",as.vector(input$list)]
+    } else {
+      input$rtmin
+    }
+    rthigh <- if(is.na(input$rtmax) == TRUE){
+      dropdown["rthigh",as.vector(input$list)]
+    } else {
+      input$rtmax
+    }
+    
+    output$table <- renderTable(makeStandardTable(obj = centWave,
+                                                  mz = mz,
+                                                  ppm = ppm,
+                                                  rtlow = rtlow,
+                                                  rthigh = rthigh
+    ),
+    striped = TRUE,
+    align = 'l',
+    width = 400,
+    digits = 5
+    )
+    
+    output$plot <- renderPlot(makeStandardGraph(obj = centWave,
                                                 mz = mz,
                                                 ppm = ppm,
                                                 rtlow = rtlow,
                                                 rthigh = rthigh
-                                                ),
-                              striped = TRUE,
-                              align = 'l',
-                              width = 400,
-                              digits = 5
-                              )
-  
-  output$plot <- renderPlot(makeStandardGraph(obj = centWave,
-                                              mz = mz,
-                                              ppm = ppm,
-                                              rtlow = rtlow,
-                                              rthigh = rthigh
-                                              )
-                            )
-  output$parameters <- renderText(c('Current Settings','\nm/z =',mz,
-                                    '\nppm =',ppm,
-                                    '\nrtlow =',rtlow,
-                                    '\nrthigh =',rthigh))
+    )
+    )
+    output$parameters <- renderText(c('Current Settings','\nm/z =',mz,
+                                      '\nppm =',ppm,
+                                      '\nrtlow =',rtlow,
+                                      '\nrthigh =',rthigh))
   }
   )
-
+  
 }
 
 

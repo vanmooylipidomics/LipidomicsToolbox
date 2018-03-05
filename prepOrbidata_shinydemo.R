@@ -45,16 +45,16 @@ ptm <- proc.time()
 
 ################ User: define locations of data files and database(s) #############
 
-working_dir = "/home/tyronelee/PtH2O2lipids/mzXML" # specify working directory
+working_dir = "/Users/TSQ/Desktop/HenryDocs/DuetratedLobstahRun/PosDuet/" # specify working directory
 setwd(working_dir) # set working directory to working_dir
 
 # specify directories subordinate to the working directory in which the .mzXML files for xcms can be found; per xcms documentation, use subdirectories within these to divide files according to treatment/primary environmental variable (e.g., station number along a cruise transect) and file names to indicate timepoint/secondary environmental variable (e.g., depth)
 
-mzXMLdirs = c("Pt_H2O2_mzXML_ms1_pos/","Pt_H2O2_mzXML_ms1_neg/", "deut_stds/")
+mzXMLdirs = c("mzXML_ms1_pos_mode/","Pt_H2O2_mzXML_ms1_neg/", "deut_stds/")
 
 # specify which of the directories above you wish to analyze this time through
 
-chosenFileSubset = "deut_stds/"
+chosenFileSubset = "mzXML_ms1_pos_mode/"
 
 # specify the ID numbers (i.e., Orbi_xxxx.mzXML) of any files you don't want to push through xcms (e.g., blanks); note that the blanks for the Pt H2O2 dataset (Orbi_0481.mzXML and Orbi_0482.mzXML) have already been removed
 
@@ -72,6 +72,7 @@ use_cent_gui = TRUE
 doshiny <- function() {
   app=shinyApp(
     ui = fluidPage(
+      titlePanel("centWave Parameters"),
       column(
         width = 6,
         numericInput('ppm', 'ppm',"2.5",step = 0.1),
