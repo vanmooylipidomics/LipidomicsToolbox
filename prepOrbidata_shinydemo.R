@@ -45,16 +45,16 @@ ptm <- proc.time()
 
 ################ User: define locations of data files and database(s) #############
 
-working_dir = "/Users/TSQ/Desktop/HenryDocs/DuetratedLobstahRun/PosDuet/" # specify working directory
+working_dir = "/home/tyronelee/PtH2O2lipids/mzXML" # specify working directory
 setwd(working_dir) # set working directory to working_dir
 
 # specify directories subordinate to the working directory in which the .mzXML files for xcms can be found; per xcms documentation, use subdirectories within these to divide files according to treatment/primary environmental variable (e.g., station number along a cruise transect) and file names to indicate timepoint/secondary environmental variable (e.g., depth)
 
-mzXMLdirs = c("mzXML_ms1_pos_mode/","Pt_H2O2_mzXML_ms1_neg/", "deut_stds/")
+mzXMLdirs = c("Pt_H2O2_mzXML_ms1_pos/","Pt_H2O2_mzXML_ms1_neg/", "deut_stds/")
 
 # specify which of the directories above you wish to analyze this time through
 
-chosenFileSubset = "mzXML_ms1_pos_mode/"
+chosenFileSubset = "deut_stds/"
 
 # specify the ID numbers (i.e., Orbi_xxxx.mzXML) of any files you don't want to push through xcms (e.g., blanks); note that the blanks for the Pt H2O2 dataset (Orbi_0481.mzXML and Orbi_0482.mzXML) have already been removed
 
@@ -65,14 +65,13 @@ excluded.mzXMLfiles = c("QE005375_blank") #excluded blank this run
 # if you aren't planning on running IPO to optimize centWave and/or group/retcor parameters this session, but you have some parameter values from an earlier IPO run saved in a .csv file, you can specify the file paths below. you will still be given the option later to choose which parameters to use.
 
 #USE THIS FLAG TO LAUNCH GUI
-use_cent_gui = TRUE
+use_gui = TRUE
 
 
 #####shiny code
-doshiny <- function() {
+doshiny_cent <- function() {
   app=shinyApp(
     ui = fluidPage(
-      titlePanel("centWave Parameters"),
       column(
         width = 6,
         numericInput('ppm', 'ppm',"2.5",step = 0.1),
@@ -143,7 +142,61 @@ doshiny <- function() {
   runApp(app)
 }
 
-
+###shiny grouping (MUSTRUN PEAK PICKING FIRST)
+doshiny_group <- function() {
+  app=shinyApp(
+    ui = fluidPage(
+      column(
+        width = 6,
+        numericInput('bw', 'Bandwidth',"5",step = 1),
+        numericInput('max', 'Max peakgroups as feature',"50"),
+        numericInput('minfrac', 'Minimum fraction to be feature',"0.25", step = 0.01),
+        numericInput('minsamp', 'Minimum samples in group to be feature',"1"),
+        numericInput('mzwid', 'Width of overlapping slices',"0.015")
+      ),
+      column(
+        width = 6,
+        tags$p("Centwave Params :", tags$span(id = "valueA", "")),
+        tags$script(
+          "$(document).on('shiny:inputchanged', function(event) {
+          if (event.name === 'a') {
+          $('#valueA').text(event.value);
+          }
+});
+          "
+      ),
+      tableOutput('show_inputs'),
+      textOutput('list_inputs'),
+      actionButton("ending","Done")
+      )
+      
+    ),
+    server = function(input, output, session) {
+      
+      AllInputs <- reactive({
+        x <- reactiveValuesToList(input)
+        data.frame(
+          names = names(x),
+          values = unlist(x, use.names = FALSE)
+        )
+      })
+      
+      output$show_inputs <- renderTable({
+        AllInputs()
+      })
+      observeEvent(input$ending, {
+        pdp <- PeakDensityParam(sampleGroups = centWave$sampleNames,
+                                bw = input$bw, minFraction = input$minfrac, minSamples = input$minsamp, 
+                                binSize = input$mzwid, maxFeatures = input$max)
+        stopApp(pdp)
+      })
+      session$onSessionEnded(function() {
+        stopApp()
+      })
+    }
+    )
+  runApp(app)
+}
 
 ######### PREPROCESSING PARAMETERS ##############
 
@@ -376,6 +429,7 @@ if (exists("excluded.mzXMLfiles") & length("excluded.mzXMLfiles")>0) {
   
 }
 
+
 ###############################################
 ############NEW STUFF STARTS HERE##############
 ###############################################
@@ -384,11 +438,11 @@ if (exists("excluded.mzXMLfiles") & length("excluded.mzXMLfiles")>0) {
 ##### PEAK PICKING
 
 #read in only msLevel1
-#rawSpec   <- MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk", msLevel = 1)
+rawSpec   <- MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk", msLevel = 1)
 
 
-if (use_cent_gui==TRUE){
-  cwp<-doshiny()
+if (use_gui==TRUE){
+  cwp<-doshiny_cent()
   
 } else {
   print(paste0("Using DEFAULT values of centWave parameters for peak picking..."))
@@ -399,16 +453,158 @@ if (use_cent_gui==TRUE){
   )
   
 }
-
-
 #find peaks
-#centWave <- findChromPeaks(rawSpec, param = cwp)
+centWave <- findChromPeaks(rawSpec, param = cwp)
 
 
-print(cwp)
+print(paste0("Peak picking completed"))
 
+print(centWave)
+
+if (plotcentwave == TRUE) {
+  plotChromPeakImage(centWave) 
+}
 
 #print timer
 print(proc.time() - ptm)
 
+
 #### GROUPING AND RETCOR
+
+#Next we group identified chromatographic peaks across samples. We use the peak density method [@Smith:2006ic] specifying 
+#that a chromatographic peak has to be present in at least 2/3 of the samples within each group to be combined to a mz-rt feature.
+
+print(paste0("Using peak density for sample groups"))
+
+if (use_gui==TRUE){
+  pdp<-doshiny_group()
+  print(paste0("Using UI formatted values for grouping..."))
+} else {
+  print(paste0("Using DEFAULT values for grouping..."))
+  #format peak density grouping parameters
+  pdp <- PeakDensityParam(sampleGroups = centWave$sampleNames,
+                          bw = density.bw, minFraction = density.minfrac, minSamples = density.minsamp, 
+                          binSize = density.mzwid, maxFeatures = density.max)
+}
+
+x_density <- groupChromPeaks(centWave, param = pdp)
+
+## Obiwarp
+#print(paste0("Doing the obiwarp alignment using the default settings...."))
+#rt_adjusted <- adjustRtime(x_density, param = ObiwarpParam())
+
+## Obiwarp
+#print(paste0("Doing the obiwarp alignment using the default settings...."))
+#rt_adjusted <- adjustRtime(x_density, param = ObiwarpParam())
+
+## Loess
+print(paste0("Doing the loess method RT alignment using the defined settings...."))
+pgp<-PeakGroupsParam(minFraction = lowess.minfrac, extraPeaks = loess.extra, smooth = loess.smoothing,
+                span = loess.span, family = loess.family)
+
+rt_adjusted <-adjustRtime(x_density, param = pgp)
+
+## plotting difference between RT adjustment and original results
+## Calculate the difference between the adjusted and the raw retention times.
+xod <- rt_adjusted
+diffRt <- rtime(xod) - rtime(xod, adjusted = FALSE)
+
+## By default, rtime and most other accessor methods return a numeric vector. To
+## get the values grouped by sample we have to split this vector by file/sample
+diffRt <- split(diffRt, fromFile(xod))
+
+boxplot(diffRt, main = "alignment results", ylab = "adjusted - raw rt") 
+
+#Second round of "grouping" after RT correction
+print(paste0("Performing second peak grouping after application of retcor..."))
+x_2density <- groupChromPeaks(rt_adjusted, param = pdp)
+
+#fill peaks
+print(paste0("Filling peaks... NOTE: SERIAL PROCESSING ONLY"))
+x_filled <- fillChromPeaks(x_2density, BPPARAM = SerialParam())
+
+## convert to xset and correct for missing values
+xset <- x_filled
+xset <-as(xset, "xcmsSet")
+
+## important! you might want to set/adjust the 'sampclass' of the returned xcmSet object before proceeding with the analysis.
+## XCMSnExp saves this as "sampleNames" so we will copy from that
+xset$class <- centWave$sampleNames
+
+#run fill peaks on xset, use all cores -2 and with memory allocation from multiple of 4
+#BPPARAM_fillpeaks <- SnowParam(min(detectCores()-2,4), progressbar = TRUE)
+#xset_fill <- do.call(fillPeaks,list(object = xset,BPPARAM = BPPARAM_fillpeaks))
+
+
+
+#####################################################################################
+##### Isotope peak identification, creation of xsAnnotate object using CAMERA #######
+#####################################################################################
+
+
+print(paste0("Applying CAMERA to identify isotopic peaks, create xsAnnotate object, and create CAMERA pseudospectra using correlation of xcms peak groups between and within samples. These pseudospectra are the groups within which the adduct hierarchy and retention time screening criteria will be applied using LOBSTAHS"))
+
+# first, a necessary workaround to avoid a import error; see https://support.bioconductor.org/p/69414/
+imports = parent.env(getNamespace("CAMERA"))
+unlockBinding("groups", imports)
+imports[["groups"]] = xcms::groups
+lockBinding("groups", imports)
+
+# create annotated xset using wrapper annotate(), allowing us to perform all CAMERA tasks at once
+
+xset_a = annotate(xset,
+                  
+                  quick=FALSE, # set to FALSE because we want to run groupCorr; will also cause CAMERA to run adduct annotation. while LOBSTAHS will do its own adduct identification later, it doesn't hurt to do this now if it lets CAMERA create better pseudospectra
+                  sample=NA, # use all samples
+                  nSlaves=4, # use 4 sockets
+                  
+                  # group FWHM settings
+                  # using defaults for now
+                  
+                  sigma=6,
+                  perfwhm=0.6,
+                  
+                  # groupCorr settings
+                  # using defaults for now
+                  
+                  cor_eic_th=0.75,
+                  graphMethod="hcs",
+                  pval=0.05,
+                  calcCiS=TRUE,
+                  calcIso=TRUE,
+                  calcCaS=FALSE, # weird results with this set to TRUE
+                  
+                  # findIsotopes settings
+                  
+                  maxcharge=4,
+                  maxiso=4,
+                  minfrac=0.5, # 0.25?
+                  
+                  # adduct annotation settings
+                  
+                  psg_list=NULL,
+                  rules=NULL,
+                  polarity=subset.polarity,
+                  multiplier=3,
+                  max_peaks=100,
+                  
+                  # common to multiple tasks
+                  
+                  intval="into",
+                  ppm=2.5,
+                  mzabs=0.0015
+                  
+)
+
+cleanParallel(xset_a) # kill sockets
+
+# at this point, should have an xsAnnotate object called "xset_a" in hand, which will serve as the primary input to the main screening and annotation function "doLOBscreen" in LOBSTAHS
+print(paste0("xsAnnotate object 'xset_a' has been created. User can now use LOBSTAHS to perform screening..."))
+
+print(xset_a)
+
+## Issue#31 fix
+xset_a@groupInfo[is.na(xset_a@groupInfo)] <- 0
+
+#print timer
+print(proc.time() - ptm)
