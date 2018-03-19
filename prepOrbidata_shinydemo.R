@@ -1,4 +1,5 @@
 #prepOrbidata_v2.R
+# Tyrone, we should add Jaimes preamble back at the top here when we are done. - Henry
 #requires: XCMS 3.0.0
 #          BioParallel
 #          snowParallel
@@ -29,6 +30,8 @@ library(snow)
 
 library(shiny)
 
+library(shinyFiles)
+
 
 ## Use socket based parallel processing on Windows systems
 if (.Platform$OS.type == "unix") {
@@ -39,33 +42,123 @@ if (.Platform$OS.type == "unix") {
 
 #timer start
 ptm <- proc.time()
+
+#USE THIS FLAG TO LAUNCH GUI
+use_gui = TRUE
+
 # ******************************************************************
 ################ Basic user begin editing here #############
 # ******************************************************************
 
+#### Shiny Code for File Selection UI. If you want to set your directories in the scirpt scroll down to line 135 #####
+
+doshiny_files <- function() {
+  app=shinyApp(
+    ui <- fluidPage(
+      # Application title
+      titlePanel( 
+        h1("Welcome to LOBSTAHS")
+      ),
+      # Sidebar with Input Buttons 
+      sidebarLayout(
+        sidebarPanel(
+          h5("Select the working directory that contains the folders for both positive and negative mzXML files"),
+          shinyDirButton(id = 'directory',
+                         label = "Select Working Directory",
+                         title = 'Select the directory you will be working in'
+          ),
+          
+          h5("Select the subset of files you wish to run this time"),
+          shinyDirButton(id = 'mzXMLdirs',
+                         label = "mzXML Sub Directory",
+                         title = 'Select the subdirectory of files that contian mzXML files you want to use this run'),
+          h5("Press when you've selected both"),
+          actionButton("ending","Done")
+        ),
+        
+        # Display the main panel with selections and info
+        mainPanel(
+          tabsetPanel(
+            tabPanel("Selections",
+                     h4("Working Directory"),
+                     verbatimTextOutput('dirfilepath'),
+                     h4("File Subset"),
+                     verbatimTextOutput('subfilepath')
+            ),
+            tabPanel("Important Info",
+                     h4("NO SPACES IN FILE NAMES"),
+                     h5("Make sure that your file names do not include spaces as it interferes with creation of the the file lists.")
+            )
+          )
+        )
+      )
+    ),
+    server <- function(input, output) {
+      
+      setwd("C:/")
+      
+      shinyDirChoose(input = input,
+                     id = 'directory',
+                     updateFreq = 2000,
+                     root=c(root="."))
+      
+      shinyDirChoose(input = input,
+                     id = 'mzXMLdirs',
+                     updateFreq = 2000,
+                     root=c(root="."))
+      
+      #output the directory file path to the UI
+      dfpath <- renderPrint(parseDirPath(roots=c(wd="."), input$directory))
+      output$dirfilepath <- dfpath
+      
+      #output the subdir file path to the UI
+      sfpath <- renderPrint(parseDirPath(roots=c(wd="."), input$mzXMLdirs))
+      output$subfilepath <- sfpath
+      
+      #end app and send outputs the Global Enviroment
+      observeEvent(input$ending, {
+      fpl <- list(parseDirPath(roots=c(wd="."), input$directory),
+                  parseDirPath(roots=c(wd="."), input$mzXMLdirs)
+                  )
+      stopApp(fpl)
+      }
+        
+      )
+      
+    }
+  )
+  runApp(app)
+  }
+
 ################ User: define locations of data files and database(s) #############
 
-working_dir = "/home/tyronelee/PtH2O2lipids/mzXML" # specify working directory
+working_dir = "/Users/TSQ/Desktop/" # specify working directory
 setwd(working_dir) # set working directory to working_dir
 
 # specify directories subordinate to the working directory in which the .mzXML files for xcms can be found; per xcms documentation, use subdirectories within these to divide files according to treatment/primary environmental variable (e.g., station number along a cruise transect) and file names to indicate timepoint/secondary environmental variable (e.g., depth)
 
-mzXMLdirs = c("Pt_H2O2_mzXML_ms1_pos/","Pt_H2O2_mzXML_ms1_neg/", "deut_stds/")
+mzXMLdirs = c("/Users/TSQ/Desktop/Duet/qwerty")
 
 # specify which of the directories above you wish to analyze this time through
 
-chosenFileSubset = "deut_stds/"
+chosenFileSubset = "/Users/TSQ/Desktop/Duet/qwerty/test"
 
 # specify the ID numbers (i.e., Orbi_xxxx.mzXML) of any files you don't want to push through xcms (e.g., blanks); note that the blanks for the Pt H2O2 dataset (Orbi_0481.mzXML and Orbi_0482.mzXML) have already been removed
 
+#IMPORTANT: ***NO SPACES IN FILE NAMES*** Make sure that your file names do not include spaces as it interferes with creation of the the file lists.
+
 #excluded.mzXMLfiles = c("0475","0474") # specifying removal of Orbi_0475.mzXML and Orbi_0474.mzXML since chromatography was screwy, to the point that weird things started to happen when I used retcor() on them
-excluded.mzXMLfiles = c("QE005375_blank") #excluded blank this run
+excluded.mzXMLfiles = c("QE005375_blank.mzXML") #excluded blank this run
 # if planning to use IPO, specify the ID numbers (i.e., Orbi_xxxx.mzXML) of the files you'd like to use for optimization; otherwise, IPO will try to use the entire dataset and you'll probably wind up with errors
 
 # if you aren't planning on running IPO to optimize centWave and/or group/retcor parameters this session, but you have some parameter values from an earlier IPO run saved in a .csv file, you can specify the file paths below. you will still be given the option later to choose which parameters to use.
 
-#USE THIS FLAG TO LAUNCH GUI
-use_gui = TRUE
+if (use_gui==TRUE){
+  fpl <- doshiny_files()
+  working_dir <- gsub(pattern = "NA", replacement = "", fpl[[1]])
+  mzXMLdirs <- gsub(pattern = "NA", replacement = "", fpl[[2]])
+  chosenFileSubset <- gsub(pattern = "NA", replacement = "", fpl[[2]])
+} 
 
 
 #####shiny code
@@ -198,6 +291,8 @@ doshiny_group <- function() {
   runApp(app)
 }
 
+
+
 ######### PREPROCESSING PARAMETERS ##############
 
 ## PEAK PICKING
@@ -252,6 +347,7 @@ loess.family = "gaussian" # want to leave outliers in for the time being
 #  print("Finished.")
 #}
 
+# Tyrone, Is this function just an artifact? You set it up but i dont see where it is used. - Henry
 tweak_centwave <- function() {
   doshiny()
   print("Finished tweaks, using user defined centwave parameters")
@@ -608,3 +704,5 @@ xset_a@groupInfo[is.na(xset_a@groupInfo)] <- 0
 
 #print timer
 print(proc.time() - ptm)
+
+
