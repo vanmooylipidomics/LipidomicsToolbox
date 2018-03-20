@@ -17,13 +17,6 @@ library(xcms)
 
 library(ggplot2)
 
-#Function to create the graph
-makeStandardGraph = function(obj, mz, ppm, rtlow, rthigh) {
-  
-  
-  
-}
-
 #Create a value for each standard
 rownames <- c("mz","ppm","rtlow","rthigh")
 DNPPE <- c(875.550487, 2.5, 14, 17)
@@ -124,7 +117,15 @@ ui <- shinyUI(fluidPage(
     mainPanel(
       tabsetPanel(
         tabPanel("Peak Table", tableOutput("table"),textOutput("nopeaks")), 
-        tabPanel("Statistics", tableOutput("stddev")), 
+        tabPanel("Statistics",
+                 tags$head(tags$style("
+                  #inline * {
+                  display:inline
+                  }")),
+                 
+                 div(id = "inline", h4("Mean = ", textOutput("mean")))
+                 #div(id = "inline", h5("Standard Dev = ", textOutput("mean")))
+                 ), 
         tabPanel("Plot", plotOutput("plot"))
       )
     )
@@ -207,11 +208,17 @@ server <- function(input, output) {
     mzlow <- (mz-mzrange)
     mzhigh <- (mz+mzrange)
     
-    #make a data frame of our sample names
+    #make a data frame of our sample names without string
     
     samplenames <- gsub(chosenFileSubset,"",mzXMLfiles)
     
-    samplenamesframe <- data.frame(samplenames,samplenumber =
+    #get rid of the "/" if there is one
+    
+    samplenamesnoslash <- gsub("/","",samplenames)
+    
+    #number each sample in the dataframe
+    
+    samplenamesframe <- data.frame(samplenamesnoslash,samplenumber =
                                      seq(from=1, to=length(mzXMLfiles)))
     
     #create + extract a lists of peaks that fit our parameters 
@@ -246,7 +253,7 @@ server <- function(input, output) {
        "No peaks found in centWave for current settings.")
     }else{
     
-    #Make everything a character so we can add a page break in <- made switch but dont like it so i commented it out
+    #Make everything a character so we can add a page break in <- I made switch for this but dont like it so i commented it out
     
     #if(input$XYZ == TRUE){
     ascharacters <- as.data.frame(lapply(reordered, as.character), stringsAsFactors = FALSE)
@@ -256,6 +263,8 @@ server <- function(input, output) {
     
    # Done <- reordered
    # }
+    
+    #give our table nice names
     colnames(Done)[1] <- "Sample Number"
     colnames(Done)[2] <- "Sample Name"
     colnames(Done)[3] <- "m/z"
@@ -280,9 +289,11 @@ server <- function(input, output) {
                                       '\nrtlow =',rtlow,
                                       '\nrthigh =',rthigh))
     
-    #Create STD deveation stats
-    output$stddev <- renderTable(data.frame(
-      "StdDev" = lapply(X = reordered[["intensity"]],FUN = sd())))
+    #Create some stats
+    #mean
+    mean <- mean(peaksframe[["into"]])
+    
+    output$mean <- renderText(format(mean, scientific = TRUE))
   }
   )
   
