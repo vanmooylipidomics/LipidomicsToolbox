@@ -165,6 +165,8 @@ if (use_gui==TRUE){
 doshiny_cent <- function() {
   app=shinyApp(
     ui = fluidPage(
+      tabsetPanel(
+        tabPanel("Parameters",
       column(
         width = 6,
         numericInput('ppm', 'ppm',"2.5",step = 0.1),
@@ -172,8 +174,8 @@ doshiny_cent <- function() {
         numericInput('max_peakwidth', 'max_peakwidth',"150"),
         numericInput('mzdiff', 'mzdiff',"0.005",step = .005),
         numericInput('snthresh', 'snthresh',"50"),
-        numericInput('prefilter_k', 'prefilter at least k peaks',"3"),
-        numericInput('prefilter_I', 'prefilter >=I',"100"),
+        numericInput('prefilter_k', 'prefilter k',"3"),
+        numericInput('prefilter_I', 'prefilter I',"100"),
         numericInput('noise', 'noise',"500"),
         selectInput('mzCenterFunc', 'mzCenterFunction2',c("Intensity Weighted Mean" = "wMean",
                                                           "Intensity Mean" = "mean",
@@ -200,8 +202,64 @@ doshiny_cent <- function() {
         tableOutput('show_inputs'),
         textOutput('list_inputs'),
         actionButton("ending","Done")
+      )),
+      tabPanel("Info",
+        HTML("
+             <html>
+              <body>
+             
+                <h2>Parameter Info</h2>
+             
+                  <p>Here I have put together a guide of what these parameters really mean and how you should think about setting them. Quoted text is from the XCMS manual. If you have thoughts on this or think something should be added/deleted let Henry know.</p>
+             
+                <h3><p>min_peakwidth and max_peakwidth</p></h3>
+                   <p>Defaults to <q>20</q> and <q>150</q></p>
+             
+                  <p><q><i>numeric(2) with the expected approximate peak width in chromatographic space. Given as a range (min, max) in seconds.</i></q></p>
+             
+                  <p>This essentially the widest and thinnest your peaks could possibly be. It is set in seconds. The defaults were lowered from a range of 10-60 secs (Patti et al.) to a range of 10-45 sec based on our own Hummel Chromotography. If you are running a new type on chromatography it might be a good idea to see how wide the widest peaks are.</p>
+             
+                <h3><p>ppm</p></h3>
+                    <p>Defaults to 2.5</p>
+                  <p><q><i>numeric(1) defining the maximal tolerated m/z deviation in consecutive scans in parts per million (ppm) for the initial ROI definition.</i></q></p>
+             
+                  <p>This is simply the mass tolerence in ppm. For our system this is always 2.5 ppm.</p>
+             
+                <h3><p>mzdiff</p></h3>
+                    <p>Defaults to 0.005</p>
+             
+                  <p><q><i>numeric(1) representing the minimum difference in m/z dimension for peaks with overlapping retention times; can be negatove to allow overlap.</i></q></p>
+             
+                  <p>Essentially saying how different do two peaks at the same retention time need to be in their mass before they are identifed as two different peaks. Shouldnt change too much with good mass accuracy. DNPPE varies across samples by ~0.00015 but for smaller compounds that could be higher.</p>
+             
+                <h3><p>snthresh</p></h3>
+                    <p>Defaults to 50</p>
+             
+                  <p><q><i>numeric(1) defining the signal to noise ratio cutoff.</i></q></p>
+             
+                  <p>Peak must be <q>X</q> times the noise to be a peak.</p>
+             
+                <h3><p>prefilter_k and prefilter_I</p></h3>
+                    <p>Defaults to k=3 and I=100</p>
+             
+                  <p><q><i>numeric(2): c(k, I) specifying the prefilter step for the first analysis step (ROI detection). Mass traces are only retained if they contain at least k peaks with intensity >= I.</i></q></p>
+             
+                <h3><p>noise</p></h3>
+                    <p>Defaults to 500</p>
+                 <p><q><i>numeric(1) allowing to set a minimum intensity required for centroids to be considered in the first analysis step (centroids with intensity noise are omitted from ROI detection).</i></q></p>
+             
+                <h3><p>fitgauss</p></h3>
+                  <p>Defaults to True</p>
+                  <p><q><i>logical(1) whether or not a Gaussian should be fitted to each peak.</i></q></p>
+             
+                <h3><p>verbose.columns</p></h3>
+                  <p>Defaults to True</p>
+                  <p><q><i>logical(1) whether additional peak meta data columns should be returned.</i></q></p>
+             
+             </body>
+             </html>")
       )
-      
+      )
     ),
     server = function(input, output, session) {
       

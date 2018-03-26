@@ -118,13 +118,8 @@ ui <- shinyUI(fluidPage(
       tabsetPanel(
         tabPanel("Peak Table", tableOutput("table"),textOutput("nopeaks")), 
         tabPanel("Statistics",
-                 tags$head(tags$style("
-                  #inline * {
-                  display:inline
-                  }")),
-                 
-                 div(id = "inline", h4("Mean = ", textOutput("mean")))
-                 #div(id = "inline", h5("Standard Dev = ", textOutput("mean")))
+                 h4("Mass Stats"),
+                 tableOutput("mzstatstable")
                  ), 
         tabPanel("Plot", plotOutput("plot"))
       )
@@ -138,7 +133,7 @@ server <- function(input, output) {
   
   #Firs lets create a data.frame for our standards
   #Create a value for each standard
-  rownames <- c("mz","ppm","rtlow","rthigh")
+  stdrownames <- c("mz","ppm","rtlow","rthigh")
   DNPPE <- c(875.550487, 2.5, 14, 17)
   DGTSd9 <- c(721.66507, 2.5, 15, 19)
   OleicAcidd9 <- c(290.30509, 2.5, 8.26, 12.26)
@@ -169,7 +164,7 @@ server <- function(input, output) {
                          "15_0_18_1_d7_PC" = PCd715181,
                          "16_0_18_1_D5_PG" = d5PG16181,
                          "16_0_18_0_16_0_D5_TG" = d5TG,
-                         row.names = rownames)
+                         row.names = stdrownames)
   
   ### Make the table and Graph ###
   
@@ -289,11 +284,41 @@ server <- function(input, output) {
                                       '\nrtlow =',rtlow,
                                       '\nrthigh =',rthigh))
     
-    #Create some stats
-    #mean
-    mean <- mean(peaksframe[["into"]])
+    #Create some stats and send them to the stats page
     
-    output$mean <- renderText(format(mean, scientific = TRUE))
+    #means
+    intomean <- mean(peaksframe[["into"]])
+    mzmean <- mean(peaksframe[["mz"]])
+    rtmean <- mean(peaksframe[["rt"]])
+    
+    #std dev
+    intostddev <- sd(peaksframe[["into"]])
+    mzstddev <- sd(peaksframe[["mz"]])
+    rtstddev <- sd(peaksframe[["rt"]])
+    
+    #join them
+    statsrownames <- c("Mean","Standard Deviation ")
+    mzstats <- c(mzmean, mzstddev)
+    rtstats <- c(rtmean, rtstddev)
+    intostats <- c(intomean, intostddev)
+    
+    mzstatsframe <- data.frame(mzstats, row.names = c("Mean","Standard Deviation"))
+    rtstatsframe <- data.frame(rtstats, row.names = c("Mean","Standard Deviation"))
+    intostatsframe <- data.frame(intostats, row.names = c("Mean","Standard Deviation"))
+    
+    output$mzstatstable <- renderTable(mzstatsframe, rownames = TRUE, digits = 5,colnames = FALSE)
+   # output$rtstatstable <- renderTable(rtstatsframe, rownames = TRUE, digits = 5,colnames = FALSE)
+    #output$intostatstable <- renderTable(intostatsframe, rownames = TRUE, digits = 5,colnames = FALSE)
+    
+   # output$mean <- renderText(format(mean, scientific = TRUE))
+    
+    #std dev of intensity
+    stddev <- sd(peaksframe[["into"]])
+    #output$stddev <- renderText(stddev)
+    
+    #peak intensity plot
+   # peakintoplot <- ggplot()
+    
   }
   )
   
