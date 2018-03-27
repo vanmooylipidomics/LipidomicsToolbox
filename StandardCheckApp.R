@@ -116,11 +116,23 @@ ui <- shinyUI(fluidPage(
     
     mainPanel(
       tabsetPanel(
-        tabPanel("Peak Table", tableOutput("table"),textOutput("nopeaks")), 
+        tabPanel("Peaks", tableOutput("table"),textOutput("nopeaks")), 
         tabPanel("Statistics",
-                 h4("Mass Stats"),
-                 tableOutput("mzstatstable")
-                 ), 
+                 tabsetPanel(
+                    tabPanel("Mass",verticalLayout(
+                        #h4("Mass Stats"),
+                        tableOutput("mzstatstable")),
+                        plotOutput("mzplot")),
+                    tabPanel("Retention Time",verticalLayout(
+                        #h4("Retention Time Stats"),
+                        tableOutput("rtstatstable")),
+                        plotOutput("rtplot")),
+                    tabPanel("Peak Area",verticalLayout(
+                        #h4("Peak Area Stats"),
+                        tableOutput("intostatstable")),
+                        plotOutput("intoplot"))
+                    
+                 )), 
         tabPanel("Plot", plotOutput("plot"))
       )
     )
@@ -291,33 +303,57 @@ server <- function(input, output) {
     mzmean <- mean(peaksframe[["mz"]])
     rtmean <- mean(peaksframe[["rt"]])
     
-    #std dev
+    #std devs
     intostddev <- sd(peaksframe[["into"]])
     mzstddev <- sd(peaksframe[["mz"]])
     rtstddev <- sd(peaksframe[["rt"]])
     
+    #ppm drift
+    ppmdif <- (mzstddev/mz)/0.000001
+    
     #join them
-    statsrownames <- c("Mean","Standard Deviation ")
-    mzstats <- c(mzmean, mzstddev)
+    mzstats <- c(mzmean, mzstddev, ppmdif)
     rtstats <- c(rtmean, rtstddev)
     intostats <- c(intomean, intostddev)
     
-    mzstatsframe <- data.frame(mzstats, row.names = c("Mean","Standard Deviation"))
-    rtstatsframe <- data.frame(rtstats, row.names = c("Mean","Standard Deviation"))
-    intostatsframe <- data.frame(intostats, row.names = c("Mean","Standard Deviation"))
+    #put rt stats in time format
+    rtastime <- as.POSIXlt(rtstats,origin="2005-01-01", tz="GMT")
+    rtformated <- format(rtastime, "%T")
+    
+    #put the intos in the right format
+    intosci <- format(intostats, scientific = TRUE)
+    
+    mzstatsframe <- data.frame(mzstats, row.names = c("Mean m/z","m/z Standard Deviation","ppm Deviation"))
+    rtstatsframe <- data.frame(rtformated, row.names = c("Mean","Standard Deviation"))
+    intostatsframe <- data.frame(intosci, row.names = c("Mean","Standard Deviation"))
     
     output$mzstatstable <- renderTable(mzstatsframe, rownames = TRUE, digits = 5,colnames = FALSE)
-   # output$rtstatstable <- renderTable(rtstatsframe, rownames = TRUE, digits = 5,colnames = FALSE)
-    #output$intostatstable <- renderTable(intostatsframe, rownames = TRUE, digits = 5,colnames = FALSE)
+    output$rtstatstable <- renderTable(rtstatsframe, rownames = TRUE, digits = 5,colnames = FALSE)
+    output$intostatstable <- renderTable(intostatsframe, rownames = TRUE, digits = 5,colnames = FALSE)
     
-   # output$mean <- renderText(format(mean, scientific = TRUE))
+    #output$mean <- renderText(format(mean, scientific = TRUE))
     
     #std dev of intensity
-    stddev <- sd(peaksframe[["into"]])
+    #stddev <- sd(peaksframe[["into"]])
     #output$stddev <- renderText(stddev)
     
-    #peak intensity plot
-   # peakintoplot <- ggplot()
+    #peak mz plot
+    mzplot <- ggplot(data = peaksframe, aes(x = mz))
+    mzplotunflipped <- mzplot + geom_dotplot(stackdir = "center")
+    mzflipped <- mzplotunflipped + coord_flip()
+    output$mzplot <- renderPlot(mzflipped)
+    
+    #peak rt plot
+    rtplot <- ggplot(data = peaksframe, aes(x = rt))
+    rtplotunflipped <- rtplot + geom_dotplot(stackdir = "center")
+    rtflipped <- rtplotunflipped + coord_flip()
+    output$rtplot <- renderPlot(rtflipped)
+    
+    #peak into plot
+    intoplot <- ggplot(data = peaksframe, aes(x = into))
+    intoplotunflipped <- intoplot + geom_dotplot(stackdir = "center")
+    intoflipped <- intoplotunflipped + coord_flip()
+    output$intoplot <- renderPlot(intoflipped)
     
   }
   )
