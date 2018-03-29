@@ -56,10 +56,10 @@ doshiny_files <- function() {
   app=shinyApp(
     ui <- fluidPage(
       # Application title
-      titlePanel( 
+      titlePanel(
         h1("Welcome to LOBSTAHS")
       ),
-      # Sidebar with Input Buttons 
+      # Sidebar with Input Buttons
       sidebarLayout(
         sidebarPanel(
           h5("Select the working directory that contains the folders for both positive and negative mzXML files"),
@@ -72,7 +72,8 @@ doshiny_files <- function() {
           shinyDirButton(id = 'mzXMLdirs',
                          label = "mzXML Sub Directory",
                          title = 'Select the subdirectory of files that contian mzXML files you want to use this run'),
-          h5("Press when you've selected both"),
+          
+          h5("You can also  edit your file paths in the textboxs to the left. When everything looks good press done."),
           actionButton("ending","Done")
         ),
         
@@ -81,21 +82,30 @@ doshiny_files <- function() {
           tabsetPanel(
             tabPanel("Selections",
                      h4("Working Directory"),
-                     verbatimTextOutput('dirfilepath'),
+                     textInput(inputId = "textdirectory", label = NULL),
+                     
                      h4("File Subset"),
-                     verbatimTextOutput('subfilepath')
-            ),
-            tabPanel("Important Info",
+                     textInput(inputId = "textmzXMLdirs", label = NULL),
+                     
                      h4("NO SPACES IN FILE NAMES"),
-                     h5("Make sure that your file names do not include spaces as it interferes with creation of the the file lists.")
+                     h5("Make sure that your file names do not include spaces as it interferes with creation of the the file lists. Don't worry about NA at the beginning of your file path.")
             )
+            
+            
           )
         )
       )
     ),
-    server <- function(input, output) {
+    
+    server <- function(input, output, session) {
       
       setwd("C:/")
+      
+      #dfpath = "EMPTY"
+      #sfpath = "EMPTY"
+      
+      #dfpath <- reactiveVal(value = NULL, label = NULL)
+      # sfpath <- reactiveVal(value = NULL, label = NULL)
       
       shinyDirChoose(input = input,
                      id = 'directory',
@@ -111,16 +121,27 @@ doshiny_files <- function() {
       dfpath <- renderPrint(parseDirPath(roots=c(wd="."), input$directory))
       output$dirfilepath <- dfpath
       
-      #output the subdir file path to the UI
       sfpath <- renderPrint(parseDirPath(roots=c(wd="."), input$mzXMLdirs))
+      #output the subdir file path to the UI
       output$subfilepath <- sfpath
+      
+      
+      #Make an event to update textbox
+      observe({
+        
+        # This will change the value of input$textdirectory, based on dfpath
+        updateTextInput(session, "textdirectory", value = paste(parseDirPath(roots=c(wd="."), input$directory)))
+        
+        #Same for the sub dir
+        updateTextInput(session, "textmzXMLdirs", value = paste(parseDirPath(roots=c(wd="."), input$mzXMLdirs)))
+        
+      })
       
       #end app and send outputs the Global Enviroment
       observeEvent(input$ending, {
-      fpl <- list(parseDirPath(roots=c(wd="."), input$directory),
-                  parseDirPath(roots=c(wd="."), input$mzXMLdirs)
-                  )
-      stopApp(fpl)
+        fpl <- list(input$textdirectory, input$textmzXMLdirs)
+        
+      stopApp(returnValue = fpl)
       }
         
       )
@@ -137,18 +158,18 @@ setwd(working_dir) # set working directory to working_dir
 
 # specify directories subordinate to the working directory in which the .mzXML files for xcms can be found; per xcms documentation, use subdirectories within these to divide files according to treatment/primary environmental variable (e.g., station number along a cruise transect) and file names to indicate timepoint/secondary environmental variable (e.g., depth)
 
-mzXMLdirs = c("/Users/TSQ/Desktop/Duet/qwerty")
+mzXMLdirs = c("/Users/TSQ/Desktop/Pos/")
 
 # specify which of the directories above you wish to analyze this time through
 
-chosenFileSubset = "/Users/TSQ/Desktop/Duet/qwerty/test"
+chosenFileSubset = "/Users/TSQ/Desktop/Pos/"
 
 # specify the ID numbers (i.e., Orbi_xxxx.mzXML) of any files you don't want to push through xcms (e.g., blanks); note that the blanks for the Pt H2O2 dataset (Orbi_0481.mzXML and Orbi_0482.mzXML) have already been removed
 
 #IMPORTANT: ***NO SPACES IN FILE NAMES*** Make sure that your file names do not include spaces as it interferes with creation of the the file lists.
 
 #excluded.mzXMLfiles = c("0475","0474") # specifying removal of Orbi_0475.mzXML and Orbi_0474.mzXML since chromatography was screwy, to the point that weird things started to happen when I used retcor() on them
-excluded.mzXMLfiles = c("QE005375_blank.mzXML") #excluded blank this run
+excluded.mzXMLfiles = c("") #excluded blank this run
 # if planning to use IPO, specify the ID numbers (i.e., Orbi_xxxx.mzXML) of the files you'd like to use for optimization; otherwise, IPO will try to use the entire dataset and you'll probably wind up with errors
 
 # if you aren't planning on running IPO to optimize centWave and/or group/retcor parameters this session, but you have some parameter values from an earlier IPO run saved in a .csv file, you can specify the file paths below. you will still be given the option later to choose which parameters to use.
