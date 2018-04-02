@@ -7,7 +7,7 @@
 #    http://shiny.rstudio.com/
 #
 
-### cruSTATION Standard Checker ###
+### Standard Checker ###
 
 ### Load Packages ###
 
@@ -16,6 +16,8 @@ library(shiny)
 library(xcms)
 
 library(ggplot2)
+
+library(DT)
 
 #Create a value for each standard
 rownames <- c("mz","ppm","rtlow","rthigh")
@@ -108,7 +110,8 @@ ui <- shinyUI(fluidPage(
       #GOOOOOOO!
       actionButton(inputId = "runtest",
                    "Search for Peak IDs"),
-      verbatimTextOutput("parameters")
+      verbatimTextOutput("parameters"),
+      verbatimTextOutput("test")
       
     ),
     
@@ -116,7 +119,7 @@ ui <- shinyUI(fluidPage(
     
     mainPanel(
       tabsetPanel(
-        tabPanel("Peaks", tableOutput("table"),textOutput("nopeaks")), 
+        tabPanel("Peaks", dataTableOutput("table"),textOutput("nopeaks")), 
         tabPanel("Statistics",
                  tabsetPanel(
                     tabPanel("Mass",verticalLayout(
@@ -127,8 +130,8 @@ ui <- shinyUI(fluidPage(
                         #h4("Retention Time Stats"),
                         tableOutput("rtstatstable")),
                         plotOutput("rtplot")),
-                    tabPanel("Peak Area",verticalLayout(
-                        #h4("Peak Area Stats"),
+                    tabPanel("Peak Intensity",verticalLayout(
+                        #h4("Peak Instensity Stats"),
                         tableOutput("intostatstable")),
                         plotOutput("intoplot"))
                     
@@ -179,6 +182,7 @@ server <- function(input, output) {
                          row.names = stdrownames)
   
   ### Make the table and Graph ###
+  output$test <- renderPrint({input$table_rows_selected})
   
   observeEvent(eventExpr = input$runtest, {
     
@@ -239,20 +243,27 @@ server <- function(input, output) {
     #pull out the columns we want
     peaksnumber <- peaksframe[["sample"]]
     peaksmz <- peaksframe[["mz"]]
-    peaksrt <- (peaksframe[["rt"]]/60)
+    peaksrt <- peaksframe[["rt"]]
     peaksintensity <-format(peaksframe[["into"]], scientific = TRUE)
+    peaksintensitynon <-format(peaksframe[["into"]])
+    
+    #Special Time conversions
+    rtminutes <- floor(peaksrt/60)
+    rtsecs <- format((peaksrt%%60),digits = 0 )
+    rtminsec <- paste(rtminutes,"m",rtsecs,"s", sep = " ")
     
     #make them into another dataframe
     samplevalues <- data.frame(name = peaksnumber,
                                mz = peaksmz,
-                               rt = peaksrt,
-                               intensity = peaksintensity)
+                               rt = rtminsec,
+                               intensity = peaksintensity,
+                               intensitynon = peaksintensitynon)
     
     #Add the sample names back in
     merged <- merge(samplevalues, samplenamesframe, by.x="name", by.y= "samplenumber")
     
     #Reorder our coulmns so sample name comes seconds
-    reordered <- merged[c(1,5,2,3,4)]
+    reordered <- merged[c(1,6,2,3,4,5)]
     
     #Added this warning message so we dont break anything if we dont find any peaks
     if(is.na(reordered[1,"name"])== TRUE){
@@ -263,12 +274,12 @@ server <- function(input, output) {
     #Make everything a character so we can add a page break in <- I made switch for this but dont like it so i commented it out
     
     #if(input$XYZ == TRUE){
-    ascharacters <- as.data.frame(lapply(reordered, as.character), stringsAsFactors = FALSE)
+    #ascharacters <- as.data.frame(lapply(reordered, as.character), stringsAsFactors = FALSE)
     
-    Done <- head(do.call(rbind, by(ascharacters, reordered$name, rbind, "")), -1 )
+    #Done <- head(do.call(rbind, by(ascharacters, reordered$name, rbind, "")), -1 )
    # }else{
     
-   # Done <- reordered
+    Done <- reordered
    # }
     
     #give our table nice names
@@ -276,13 +287,12 @@ server <- function(input, output) {
     colnames(Done)[2] <- "Sample Name"
     colnames(Done)[3] <- "m/z"
     colnames(Done)[4] <- "Retention Time"
-    colnames(Done)[5] <- "Intensity"
+    colnames(Done)[5] <- "Intensity Scientific"
+    colnames(Done)[6] <- "Intensity"
     
-    output$table <- renderTable(print(Done),
-                                striped = FALSE,
-                                align = 'l',
-                                width = 400,
-                                digits = 5)
+    DataTableDone <- datatable(data = Done,selection = "multiple")
+    
+    output$table <- renderDataTable(DataTableDone)
     }
     
     #Create the graph
