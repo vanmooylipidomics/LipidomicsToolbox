@@ -30,8 +30,6 @@ library(snow)
 
 library(shiny)
 
-library(shinyFiles)
-
 library(DT)
 
 ## Use socket based parallel processing on Windows systems
@@ -64,15 +62,13 @@ doshiny_files <- function() {
       sidebarLayout(
         sidebarPanel(
           h5("Select the working directory that contains the folders for both positive and negative mzXML files"),
-          shinyDirButton(id = 'directory',
-                         label = "Select Working Directory",
-                         title = 'Select the directory you will be working in'
+          actionButton(inputId = 'directory',
+                       label = "Select Working Directory"
           ),
           
           h5("Select the subset of files you wish to run this time"),
-          shinyDirButton(id = 'mzXMLdirs',
-                         label = "mzXML Sub Directory",
-                         title = 'Select the subdirectory of files that contian mzXML files you want to use this run'),
+          actionButton(inputId = 'mzXMLdirs',
+                       label = "mzXML Sub Directory"),
           
           h5("You can also  edit your file paths in the textboxs to the left. When everything looks good press done."),
           actionButton("ending","Done")
@@ -100,51 +96,28 @@ doshiny_files <- function() {
     
     server <- function(input, output, session) {
       
-      setwd("C:/")
+      #dir_out <- reactiveVal(value = NULL)
       
-      #dfpath = "EMPTY"
-      #sfpath = "EMPTY"
-      
-      #dfpath <- reactiveVal(value = NULL, label = NULL)
-      # sfpath <- reactiveVal(value = NULL, label = NULL)
-      
-      shinyDirChoose(input = input,
-                     id = 'directory',
-                     updateFreq = 10000,
-                     root=c(root="."))
-      
-      shinyDirChoose(input = input,
-                     id = 'mzXMLdirs',
-                     updateFreq = 10000,
-                     root=c(root="."))
-      
-      #output the directory file path to the UI
-      dfpath <- renderPrint(parseDirPath(roots=c(wd="."), input$directory))
-      output$dirfilepath <- dfpath
-      
-      sfpath <- renderPrint(parseDirPath(roots=c(wd="."), input$mzXMLdirs))
-      #output the subdir file path to the UI
-      output$subfilepath <- sfpath
-      
-      
-      #Make an event to update textbox
-      observe({
-        
-        # This will change the value of input$textdirectory, based on dfpath
-        updateTextInput(session, "textdirectory", value = paste(parseDirPath(roots=c(wd="."), input$directory)))
-        
-        #Same for the sub dir
-        updateTextInput(session, "textmzXMLdirs", value = paste(parseDirPath(roots=c(wd="."), input$mzXMLdirs)))
-        
+      observeEvent(eventExpr = input$directory, {
+        dir_out <- choose.dir()
+        dir_out<-gsub("\\\\","/",dir_out)
+        updateTextInput(session, "textdirectory", value = print(dir_out))
       })
+      
+      observeEvent(eventExpr = input$mzXMLdirs, {
+        sub_dir_out <- choose.dir()
+        sub_dir_out<-gsub("\\\\","/",sub_dir_out)
+        updateTextInput(session, "textdirectory", value = print(sub_dir_out))
+      })
+      
       
       #end app and send outputs the Global Enviroment
       observeEvent(input$ending, {
         fpl <- list(input$textdirectory, input$textmzXMLdirs)
         
-      stopApp(returnValue = fpl)
+        stopApp(returnValue = fpl)
       }
-        
+      
       )
       
     }
