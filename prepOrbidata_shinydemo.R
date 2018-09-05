@@ -32,6 +32,7 @@ library(shiny)
 
 library(shinyFiles)
 
+library(DT)
 
 ## Use socket based parallel processing on Windows systems
 if (.Platform$OS.type == "unix") {
@@ -109,12 +110,12 @@ doshiny_files <- function() {
       
       shinyDirChoose(input = input,
                      id = 'directory',
-                     updateFreq = 2000,
+                     updateFreq = 10000,
                      root=c(root="."))
       
       shinyDirChoose(input = input,
                      id = 'mzXMLdirs',
-                     updateFreq = 2000,
+                     updateFreq = 10000,
                      root=c(root="."))
       
       #output the directory file path to the UI
@@ -169,7 +170,7 @@ chosenFileSubset = "/Users/TSQ/Desktop/Pos/"
 #IMPORTANT: ***NO SPACES IN FILE NAMES*** Make sure that your file names do not include spaces as it interferes with creation of the the file lists.
 
 #excluded.mzXMLfiles = c("0475","0474") # specifying removal of Orbi_0475.mzXML and Orbi_0474.mzXML since chromatography was screwy, to the point that weird things started to happen when I used retcor() on them
-excluded.mzXMLfiles = c("") #excluded blank this run
+#excluded.mzXMLfiles = c("") #excluded blank this run
 # if planning to use IPO, specify the ID numbers (i.e., Orbi_xxxx.mzXML) of the files you'd like to use for optimization; otherwise, IPO will try to use the entire dataset and you'll probably wind up with errors
 
 # if you aren't planning on running IPO to optimize centWave and/or group/retcor parameters this session, but you have some parameter values from an earlier IPO run saved in a .csv file, you can specify the file paths below. you will still be given the option later to choose which parameters to use.
@@ -421,17 +422,6 @@ loess.family = "gaussian" # want to leave outliers in for the time being
 
 ##################run centparam tweaker
 
-#tweak_centwave <- function() {
-#  doshiny()
-#  print("Finished.")
-#}
-
-# Tyrone, Is this function just an artifact? You set it up but i dont see where it is used. - Henry
-tweak_centwave <- function() {
-  doshiny()
-  print("Finished tweaks, using user defined centwave parameters")
-}
-
 # readinteger: for a given prompt, allows capture of user input as an integer; rejects non-integer input
 
 readinteger = function(prompttext) {
@@ -657,7 +647,7 @@ if (use_gui==TRUE){
 } else {
   print(paste0("Using DEFAULT values for grouping..."))
   #format peak density grouping parameters
-  pdp <- PeakDensityParam(sampleGroups = centWave$sampleNames,
+  pdp <- PeakDensityParam(sampleGroups = SAMPTEST,
                           bw = density.bw, minFraction = density.minfrac, minSamples = density.minsamp, 
                           binSize = density.mzwid, maxFeatures = density.max)
 }
@@ -696,7 +686,9 @@ x_2density <- groupChromPeaks(rt_adjusted, param = pdp)
 
 #fill peaks
 print(paste0("Filling peaks... NOTE: SERIAL PROCESSING ONLY"))
-x_filled <- fillChromPeaks(x_2density, BPPARAM = SerialParam())
+x_filled <- fillChromPeaks(x_2density, BPPARAM = SnowParam(workers = 7))
+
+#This seems like it works in parallel now on small data sets.
 
 ## convert to xset and correct for missing values
 xset <- x_filled

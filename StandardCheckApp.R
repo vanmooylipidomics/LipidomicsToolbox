@@ -145,6 +145,9 @@ ui <- shinyUI(fluidPage(
 ### server - The code behind the UI
 server <- function(input, output) {
   
+  #extract a data.frame with all the info we want once
+  allpeaks <- chromPeaks(centWave)
+  allpeaksframe <- as.data.frame(allpeaks)
   
   #Firs lets create a data.frame for our standards
   #Create a value for each standard
@@ -233,9 +236,8 @@ server <- function(input, output) {
                                      seq(from=1, to=length(mzXMLfiles)))
     
     #create + extract a lists of peaks that fit our parameters 
-    peaks <- chromPeaks(object = centWave, 
-                        mz = c(mzlow, mzhigh),
-                        rt = c(seclow, sechigh))
+    mzsubset <- subset(allpeaksframe, mz>mzlow & mz<mzhigh)
+    peaks <- subset(mzsubset, rt>seclow & rt<sechigh)
     
     #turn our matrix into a dataframe
     peaksframe <- as.data.frame(peaks)
@@ -257,7 +259,8 @@ server <- function(input, output) {
                                mz = peaksmz,
                                rt = rtminsec,
                                intensity = peaksintensity,
-                               intensitynon = peaksintensitynon)
+                               intensitynon = peaksintensitynon,
+                               row.names = rownames(peaksframe))
     
     #Add the sample names back in
     merged <- merge(samplevalues, samplenamesframe, by.x="name", by.y= "samplenumber")
