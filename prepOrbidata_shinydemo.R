@@ -620,10 +620,12 @@ if (use_gui==TRUE){
 } else {
   print(paste0("Using DEFAULT values for grouping..."))
   #format peak density grouping parameters
-  pdp <- PeakDensityParam(sampleGroups = SAMPTEST,
+  pdp <- PeakDensityParam(sampleGroups = rep(1,length(mzXMLfiles)),
                           bw = density.bw, minFraction = density.minfrac, minSamples = density.minsamp, 
                           binSize = density.mzwid, maxFeatures = density.max)
 }
+
+pdp@sampleGroups <- rep(1,length(mzXMLfiles))
 
 x_density <- groupChromPeaks(centWave, param = pdp)
 
@@ -748,5 +750,10 @@ xset_a@groupInfo[is.na(xset_a@groupInfo)] <- 0
 
 #print timer
 print(proc.time() - ptm)
+
+#Fix for LOBSTAHS XCMS 3 error. LOBSTAHS seems to need a more factor levels to run than there are samples. 
+#Here I simply create a factor with double the levels of samples in the "class" slot. Temp fix until we fix dolobscreen()
+
+xset_a@xcmsSet@phenoData$class <- factor(x = rep(1,length(mzXMLfiles)),levels = 1:(length(mzXMLfiles)*2))
 
 
