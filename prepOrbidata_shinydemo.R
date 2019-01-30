@@ -63,7 +63,7 @@ doshiny_files <- function() {
       # Sidebar with Input Buttons
       sidebarLayout(
         sidebarPanel(
-          h5("Select the working directory that contains the folders for both positive and negative mzXML files"),
+          h5("Select the working directory that contains the folders for both positive and negative mzXML files. NOTE: Only works on window. On Mac you must type or copy/paste file path into text inputs on the right."),
           actionButton(inputId = 'directory',
                        label = "Select Working Directory"
           ),
@@ -586,8 +586,14 @@ if (exists("excluded.mzXMLfiles") & length("excluded.mzXMLfiles")>0) {
 ##### PEAK PICKING
 
 #read in only msLevel1
+<<<<<<< HEAD
 rawSpec   <- MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk", msLevel = 1)
 rawSpecSave <-  MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk")
+=======
+rawSpec <- MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk", msLevel = 1)
+rawSpec_ms2 <- MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk")
+
+>>>>>>> 05171d66a61a5015c4dc50d8786d8ad6a406f8ae
 
 if (use_gui==TRUE){
   cwp<-doshiny_cent()
