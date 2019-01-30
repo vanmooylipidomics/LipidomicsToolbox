@@ -32,6 +32,8 @@ library(shiny)
 
 library(DT)
 
+library(ggplot2)
+
 ## Use socket based parallel processing on Windows systems
 if (.Platform$OS.type == "unix") {
     register(bpstart(MulticoreParam()))
@@ -108,7 +110,7 @@ doshiny_files <- function() {
         sub_dir_out <- choose.dir()
         sub_dir_out<-gsub("\\\\","/",sub_dir_out)
         updateTextInput(session, "textdirectory", value = print(sub_dir_out))
-      })
+      )}
       
       
       #end app and send outputs the Global Enviroment
@@ -205,7 +207,7 @@ doshiny_cent <- function() {
              
                 <h2>Parameter Info</h2>
              
-                  <p>Here I have put together a guide of what these parameters really mean and how you should think about setting them. Quoted text is from the XCMS manual. If you have thoughts on this or think something should be added/deleted let Henry know.</p>
+                  <p>Here I have put together a guide of what I understand these parameters to really mean and how you should think about setting them. Quoted text is from the XCMS manual. If you have thoughts on this or think something should be added/deleted let Henry know.</p>
              
                 <h3><p>min_peakwidth and max_peakwidth</p></h3>
                    <p>Defaults to <q>20</q> and <q>150</q></p>
@@ -238,18 +240,26 @@ doshiny_cent <- function() {
                     <p>Defaults to k=3 and I=100</p>
              
                   <p><q><i>numeric(2): c(k, I) specifying the prefilter step for the first analysis step (ROI detection). Mass traces are only retained if they contain at least k peaks with intensity >= I.</i></q></p>
+
+                  <p>Before the program detects peaks, it detects <q>ROIs</q> which stands for regions of interest. It will then look in these ROIs to find peaks. It will skip a ROI if it doesnt have <q>k</q> peaks with a certian intensity <q>I</q></p>
              
                 <h3><p>noise</p></h3>
                     <p>Defaults to 500</p>
                  <p><q><i>numeric(1) allowing to set a minimum intensity required for centroids to be considered in the first analysis step (centroids with intensity noise are omitted from ROI detection).</i></q></p>
+
+                <p>This value define the hieght a peak must be in order to be considered about the noise. We have set it at 500 becuase we can sometimes see useful peaks that are e^4 but anything e^3 is liekly noise. This could be set heigher for really rich sample.</p>
              
                 <h3><p>fitgauss</p></h3>
                   <p>Defaults to True</p>
                   <p><q><i>logical(1) whether or not a Gaussian should be fitted to each peak.</i></q></p>
+
+                <p>Whether or not you want to smooth your peak shapes with a filter.</p>
              
                 <h3><p>verbose.columns</p></h3>
                   <p>Defaults to True</p>
                   <p><q><i>logical(1) whether additional peak meta data columns should be returned.</i></q></p>
+
+                <p>Whether to include Metadata. Keep true.</p>
              
              </body>
              </html>")
@@ -577,7 +587,7 @@ if (exists("excluded.mzXMLfiles") & length("excluded.mzXMLfiles")>0) {
 
 #read in only msLevel1
 rawSpec   <- MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk", msLevel = 1)
-
+rawSpecSave <-  MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk")
 
 if (use_gui==TRUE){
   cwp<-doshiny_cent()
