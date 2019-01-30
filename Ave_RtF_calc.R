@@ -3,6 +3,7 @@
 library(ggplot2)
 library(ggrepel)
 library(grid)
+library(xcms)
 
 ## Dont need right now
 # Raw Data including ms2
@@ -10,13 +11,10 @@ library(grid)
 
 # A peak file with peak detection done on it AND MS2!
 centWave <- centWave
-
-# A LOBset from both of those
-#LOBset <- LOBset
   
 # Properly formated list of RtF estimates: Must include columns: "peakgroup_rt","compound_name","peakgroup_mz"
 #estimates <- LOBSTAHS_screened_peakdata_2018.09.01T12.29.18.0400
-estimates
+estimates <- 
 
 ################################################################
 
@@ -33,7 +31,7 @@ plot_table_compound <- function(mz,rtlow,rthigh,ppm,xclname) {
   
   #make a data frame of our sample names without string
   
-  samplenames <- gsub(chosenFileSubset,"",mzXMLfiles)
+  samplenames <- gsub(chosenFileSubset,"",mzXMLfiles) #get names from centwave!
   
   #get rid of the "/" if there is one
   
@@ -138,14 +136,9 @@ colnames(ms1rt) <- "rtime"
 Storage <- list()
 
 i <- NULL
-test<- list()
+
 for (i in 1:nrow(estimates)) {
   run<-estimates[i,]
-  high <-run$rt_dan+30
-  low <- run$rt_dan-30
-  
-  high <- high/60
-  low <- low/60
   
   name <- as.character(run$compound_name[1])
     
@@ -231,14 +224,14 @@ for (i in 1:length(Storage)) {
   
   run$duplicated <- rep(x = FALSE,nrow(run))
   
-  run$is_there_ms2 <- rep(x = FALSE,nrow(run))
-  
   y<-NULL
   for (y in 1:nrow(run)) {
     if (run[y,"Sample Number"]%in%doop_Nums) {
     run[y,"duplicated"]<- TRUE 
     }
   }
+  
+  run$is_there_ms2 <- rep(x = FALSE,nrow(run))
   
   y<-NULL
   for (y in 1:nrow(run)) {
