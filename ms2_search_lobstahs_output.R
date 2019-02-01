@@ -21,12 +21,12 @@ for (i in 1:nrow(estimates)) {
   mz <- run$LOBdbase_mz # pull mz and rt for that one row
   rt <- run$peakgroup_rt
   
-  mzrange <- mz*(0.000001*5) # calculate a mass range
+  mzrange <- mz*(0.000001*10) # calculate a mass range (in this case, within 10 ppm)
   mzlow <- (mz-mzrange)
   mzhigh <- (mz+mzrange)
   
-  rthigh<-rt+50 # and an rt range
-  rtlow<-rt-50
+  rthigh<-rt+30 # and an rt range
+  rtlow<-rt-30
   
   # possible ms2 candidates start as a subset of the precursor ions in the mass range
   ms2candid <- subset.data.frame(x = ms1mz,subset = precursorMz>=mzlow & precursorMz<=mzhigh)
