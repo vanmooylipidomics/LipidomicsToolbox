@@ -5,16 +5,17 @@ library(ggrepel)
 library(grid)
 library(xcms)
 
+
 ## Dont need right now
 # Raw Data including ms2
 #rawSpec <- rawSpec
 
 # A peak file with peak detection done on it AND MS2!
-centWave <- centWave
-  
+centWave <- centWave_ms2
+
 # Properly formated list of RtF estimates: Must include columns: "peakgroup_rt","compound_name","peakgroup_mz"
 #estimates <- LOBSTAHS_screened_peakdata_2018.09.01T12.29.18.0400
-estimates <- 
+estimates <- read.csv("C:/Users/TSQ/Desktop/Daniel Lowenstein/RT_Factors/Hummel RtF Master Database - rtf_data.csv")
 
 ################################################################
 
@@ -104,7 +105,7 @@ plot_table_compound <- function(mz,rtlow,rthigh,ppm,xclname) {
     colnames(Done)[6] <- "Intensity Scientific"
     colnames(Done)[7] <- "Intensity"
   
-  write.table(Done, file = paste("~/Desktop/RtF_data/RtF/tables/",xclname,".txt",sep = ""), sep="\t")
+  write.table(Done, file = paste("C:/Users/TSQ/Desktop/Daniel Lowenstein/RT_Factors/tables",xclname,".txt",sep = ""), sep="\t")
 
 }
 return(Done)
@@ -165,7 +166,7 @@ for (i in 1:nrow(estimates)) {
     ms2matchs[j,"file"] <- centWave@featureData@data[row.names(ms2matchs[j,]),"fileIdx"]
     }
       }
-  Store <- plot_table_compound(mz = run$mz,rtlow = low,rthigh = high,ppm = 2.5,xclname = name)
+  Store <- plot_table_compound(mz = run$mz,rtlow = rtlow,rthigh = rthigh,ppm = 2.5,xclname = name)
   if (class(Store)=="character") {
     Storage[[i]]<- list(Store,ms2matchs)
     names(Storage)[[i]] <- name
@@ -268,7 +269,7 @@ for (i in 1:length(Storage)) {
     geom_hline(yintercept=run[1,"estimate_RtF"], linetype="dashed", color = "red")+
     geom_text_repel(data = runms2,mapping = aes(label=run[which(run$is_there_ms2==TRUE,),"Sample Name"]),nudge_y = .005,size=3,segment.alpha = .3)
   
-  setwd("~/Desktop/RtF_data/RtF/plots/")
+  setwd("C:/Users/TSQ/Desktop/Daniel Lowenstein/RT_Factors/plots/")
   
   jpeg(filename = names(Storage[i]),width = 1000,height = 600)
   
