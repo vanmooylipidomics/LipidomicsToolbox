@@ -1,8 +1,18 @@
 # Searching for ms2 via mz/rt window
 # 2/1/19
 
+library(xcms)
+library(MSnbase)
 
-lobs_csv <- original_labelled %>% filter(species != "NA")
+#load lobstahs output
+setwd("C:/Users/TSQ/Desktop/Daniel Lowenstein/Nicole_Coral_Data/Rerun_with_ms2/")
+data <- read.csv("Nicole_Rerun_PosMode_LOBSTAHS_screened_peakdata_2019-02-06T10-59-51_AM-0500.csv")
+
+lobs_csv <- data %>% filter(species != "NA")
+
+# reassign centwaves for easy reference
+centWave_ms1 <- centWave
+centWave <- centWave_ms2
 
 ms1mz <- as.data.frame(precursorMz(centWave))
 ms1rt <- as.data.frame(rtime(centWave))
@@ -15,7 +25,7 @@ Storage <- list()
 
 i <- NULL
 
-for (i in 1:nrow(estimates)) {
+for (i in 1:nrow(lobs_csv)) {
   run<-lobs_csv[i,] # pull out one row of LOBSTAHs output
 
   mz <- run$LOBdbase_mz # pull mz and rt for that one row
@@ -45,9 +55,10 @@ for (i in 1:nrow(estimates)) {
   # and match the fileIdx (file number within the prepOrbidata run)
   # and paste it together with the QE number right before the beginning
   # of the run, so they match up with this run's QE number
+  # ****Change QE number!!!!!!!!!!!!!
   if(nrow(ms2matches)>0){
     for (j in 1:nrow(ms2matches)){
-      ms2matches[j,"file"] <- paste0("QE00", (6951+as.numeric(centWave@featureData@data[row.names(ms2matches[j,]),"fileIdx"])))
+      ms2matches[j,"file"] <- paste0("QE00", (6420+as.numeric(centWave@featureData@data[row.names(ms2matches[j,]),"fileIdx"])))
     }
   }
   Storage <- rbind(Storage, ms2matches)
