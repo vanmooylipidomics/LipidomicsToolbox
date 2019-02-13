@@ -9,7 +9,8 @@ library(grid)
 #rawSpec <- rawSpec
 
 # A peak file with peak detection done on it AND MS2!
-centWave <- centWave
+centWave_OG <- centWave
+centWave <- centWave_ms2
 
 # A LOBset from both of those
 #LOBset <- LOBset
@@ -188,20 +189,22 @@ for (i in 1:nrow(estimates)) {
 
 # i <- NULL
 # for (i in 1:nrow(estimates)) {
-#   run<-estimates[i,]
-#   high <-run$peakgroup_rt+75
-#   low <- run$peakgroup_rt-75
-#   
-#   high <- high/60
-#   low <- low/60
-#   
-#   name <- as.character(run$compound_name[1])
-#   
-#   setwd("~/Desktop/RtF_data/RtF/plots/")
-#   
+  run<-estimates[3,]
+  high <-run$rt_dan+75
+  low <- run$rt_dan-75
+
+  high <- high/60
+  low <- low/60
+
+  name <- as.character(run$compound_name[1])
+  
+  plot_graph(mz = 588.4469949,rtlow = 8.111666667,rthigh = 10.61166667,ppm = 2.5,xclname = "DGCC 22:0")
+
+  setwd("~/Desktop/RtF_data/RtF/plots/")
+
 #   jpeg(filename = name)
 #   
-#   plot_graph(mz = run$peakgroup_mz,rtlow = low,rthigh = high,ppm = 2.5,xclname = name)
+#   
 #   
 #   dev.off()
 #   

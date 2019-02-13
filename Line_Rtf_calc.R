@@ -10,6 +10,13 @@ data <- data[which(is.na(data$peakgroup_rt)==FALSE),]
 
 data <- data[data$species=="PE",] #Change this to do a different compound for diff graph
 
+data <- FINAL
+
+data$compound_name
+data$frag_ID <- rownames(data)
+data$mz <- data$LOBdbase_mz
+data$DNPPE_Factor <- data$peakgroup_rt
+
 #For Just two plots 
 RtF_equation <- function(data,class,plot_text,plot_connections,plot_subplots,strictness){
   
@@ -128,7 +135,7 @@ i <-NULL
     }
       
     mod <- lm(y ~ x)
-    smooth_vals = predict(object=mod,newdata = data.frame(x=seq(0,2,0.01)))
+    smooth_vals = predict(object=mod,newdata = data.frame(x=seq(0,max(x),max(x)/200)))
     smooth_vals_list <- list(smooth_vals)
     mod_storage[[i]]<-list(mod,smooth_vals)
     
@@ -152,11 +159,11 @@ lineFrame <- NULL
         lineFrame <- data.frame(mod_storage[[i]][[2]])
         colnames(lineFrame) <- "values"
         lineFrame$type <- rep(i,nrow(lineFrame))
-        lineFrame$x_val <- seq(0,2,0.01)
+        lineFrame$x_val <- seq(0,max(x),max(x)/200)
       }else{
         i_frame <- data.frame(mod_storage[[i]][[2]])
         i_frame$type <- rep(i,nrow(i_frame))
-        i_frame$x_val <- seq(0,2,0.01)
+        i_frame$x_val <- seq(0,max(x),max(x)/200)
         colnames(i_frame) <- c("values","type","x_val")
         lineFrame <- rbind(lineFrame,i_frame)
       }
@@ -164,7 +171,7 @@ lineFrame <- NULL
   }
   
 print(final_plot + geom_line(data = lineFrame,mapping = aes(x = x_val,y = values, group=type,color="Delta Carbon"))+
-                    xlim(min(x),max(x))+ylim(min(y),max(y))+ggtitle("Change in Carbon Line"))
+                    ggtitle("Change in Carbon Line"))+xlim(min(x),max(x))+ylim(min(y),max(y))
 
 final2<- final_plot + geom_line(data = lineFrame,mapping = aes(x = x_val,y = values, group=type,color="Delta Carbon"))+
   xlim(min(x),max(x))+ylim(min(y),max(y))+ggtitle("Change in Carbon Line")
@@ -190,7 +197,7 @@ for (i in 1:length(return[["C"]])) {
     }
     
     mod <- lm(y ~ x)
-    smooth_vals = predict(object=mod,newdata = data.frame(x=seq(0,2,0.01)))
+    smooth_vals = predict(object=mod,newdata = data.frame(x=seq(0,max(x),max(x)/200)))
     smooth_vals_list <- list(smooth_vals)
     mod_storage2[[i]]<-list(mod,smooth_vals)
     
@@ -205,11 +212,11 @@ for (i in 1:length(mod_storage2)) {
       lineFrame2 <- data.frame(mod_storage2[[i]][[2]])
       colnames(lineFrame2) <- "values"
       lineFrame2$type <- rep(i,nrow(lineFrame2))
-      lineFrame2$x_val <- seq(0,2,0.01)
+      lineFrame2$x_val <- seq(0,max(x),max(x)/200)
     }else{
       i_frame <- data.frame(mod_storage2[[i]][[2]])
       i_frame$type <- rep(i,nrow(i_frame))
-      i_frame$x_val <- seq(0,2,0.01)
+      i_frame$x_val <- seq(0,max(x),max(x)/200)
       colnames(i_frame) <- c("values","type","x_val")
       lineFrame2 <- rbind(lineFrame2,i_frame)
     }
@@ -256,7 +263,7 @@ for (i in 1:length(return[["C_db"]])) {
     }
     
     mod <- lm(y ~ x)
-    smooth_vals = predict(object=mod,newdata = data.frame(x=seq(0,2,0.01)))
+    smooth_vals = predict(object=mod,newdata = data.frame(x=seq(0,max(x),max(x)/200)))
     smooth_vals_list <- list(smooth_vals)
     mod_storage3[[i]]<-list(mod,smooth_vals)
     
@@ -275,11 +282,11 @@ for (i in 1:length(mod_storage3)) {
       lineFrame3 <- data.frame(mod_storage3[[i]][[2]])
       colnames(lineFrame3) <- "values"
       lineFrame3$type <- rep(i,nrow(lineFrame3))
-      lineFrame3$x_val <- seq(0,2,0.01)
+      lineFrame3$x_val <- seq(0,max(x),max(x)/200)
     }else{
       i_frame <- data.frame(mod_storage3[[i]][[2]])
       i_frame$type <- rep(i,nrow(i_frame))
-      i_frame$x_val <- seq(0,2,0.01)
+      i_frame$x_val <- seq(0,max(x),max(x)/200)
       colnames(i_frame) <- c("values","type","x_val")
       lineFrame3 <- rbind(lineFrame3,i_frame)
     }
@@ -296,7 +303,7 @@ Doneee <-final3 + geom_line(data = lineFrame3,mapping = aes(x = x_val,y = values
 
 }
 
-RtF_equation(data = data,class = "NA",plot_text = TRUE,plot_connections = TRUE,plot_subplots = FALSE,strictness = 2)
+RtF_equation(data = data,class = "NA",plot_text = TRUE,plot_connections = TRUE,plot_subplots = TRUE,strictness = 4)
 
 
 data$frag_ID <- row.names(data)
