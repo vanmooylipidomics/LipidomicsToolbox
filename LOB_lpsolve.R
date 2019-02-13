@@ -191,4 +191,3 @@ LOB_lpsolve <- function(LOBpeaklist,choose_class=NULL,use_ms2_RtF) {
   return(return)
 }
 
- test <-LOB_lpsolve(peaks)
