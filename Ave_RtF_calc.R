@@ -3,21 +3,22 @@
 library(ggplot2)
 library(ggrepel)
 library(grid)
+library(xcms)
+
 
 ## Dont need right now
 # Raw Data including ms2
 #rawSpec <- rawSpec
 
 # A peak file with peak detection done on it AND MS2!
+<<<<<<< HEAD
 centWave_OG <- centWave
+=======
+>>>>>>> 6e5e33ea5f2282957b049c31778a6f62b04dbc76
 centWave <- centWave_ms2
 
-# A LOBset from both of those
-#LOBset <- LOBset
-  
 # Properly formated list of RtF estimates: Must include columns: "peakgroup_rt","compound_name","peakgroup_mz"
 #estimates <- LOBSTAHS_screened_peakdata_2018.09.01T12.29.18.0400
-estimates
 
 ################################################################
 
@@ -34,7 +35,6 @@ plot_table_compound <- function(mz,rtlow,rthigh,ppm,xclname) {
   
   #make a data frame of our sample names without string
   
-  samplenames <- gsub(chosenFileSubset,"",mzXMLfiles)
   
   #get rid of the "/" if there is one
   
@@ -107,7 +107,6 @@ plot_table_compound <- function(mz,rtlow,rthigh,ppm,xclname) {
     colnames(Done)[6] <- "Intensity Scientific"
     colnames(Done)[7] <- "Intensity"
   
-  write.table(Done, file = paste("~/Desktop/RtF_data/RtF/tables/",xclname,".txt",sep = ""), sep="\t")
 
 }
 return(Done)
@@ -139,14 +138,8 @@ colnames(ms1rt) <- "rtime"
 Storage <- list()
 
 i <- NULL
-test<- list()
 for (i in 1:nrow(estimates)) {
   run<-estimates[i,]
-  high <-run$rt_dan+30
-  low <- run$rt_dan-30
-  
-  high <- high/60
-  low <- low/60
   
   name <- as.character(run$compound_name[1])
     
@@ -173,7 +166,6 @@ for (i in 1:nrow(estimates)) {
     ms2matchs[j,"file"] <- centWave@featureData@data[row.names(ms2matchs[j,]),"fileIdx"]
     }
       }
-  Store <- plot_table_compound(mz = run$mz,rtlow = low,rthigh = high,ppm = 2.5,xclname = name)
   if (class(Store)=="character") {
     Storage[[i]]<- list(Store,ms2matchs)
     names(Storage)[[i]] <- name
@@ -234,14 +226,14 @@ for (i in 1:length(Storage)) {
   
   run$duplicated <- rep(x = FALSE,nrow(run))
   
-  run$is_there_ms2 <- rep(x = FALSE,nrow(run))
-  
   y<-NULL
   for (y in 1:nrow(run)) {
     if (run[y,"Sample Number"]%in%doop_Nums) {
     run[y,"duplicated"]<- TRUE 
     }
   }
+  
+  run$is_there_ms2 <- rep(x = FALSE,nrow(run))
   
   y<-NULL
   for (y in 1:nrow(run)) {
@@ -278,7 +270,6 @@ for (i in 1:length(Storage)) {
     geom_hline(yintercept=run[1,"estimate_RtF"], linetype="dashed", color = "red")+
     geom_text_repel(data = runms2,mapping = aes(label=run[which(run$is_there_ms2==TRUE,),"Sample Name"]),nudge_y = .005,size=3,segment.alpha = .3)
   
-  setwd("~/Desktop/RtF_data/RtF/plots/")
   
   jpeg(filename = names(Storage[i]),width = 1000,height = 600)
   
