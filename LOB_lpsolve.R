@@ -71,9 +71,8 @@ LOB_lpsolve <- function(LOBpeaklist,choose_class=NULL,use_ms2_RtF) {
       }else{
     LOBpeaklist <- LOBpeaklist[which(LOBpeaklist$species==choose_class),]}
   }else{
-    LOBpeaklist <- LOBpeaklist[which(LOBpeaklist$lipid_class=="IP_DAG"),]
+    LOBpeaklist <- subset(LOBpeaklist, subset = lipid_class %in% c("IP_DAG","IP_MAG","TAG"))
   }
-  
   # Put what we need in a dataframe 
   PRErun  <- data.frame(LOBpeaklist$match_ID,
                      LOBpeaklist$compound_name,
@@ -152,6 +151,11 @@ LOB_lpsolve <- function(LOBpeaklist,choose_class=NULL,use_ms2_RtF) {
   }
   cat(" Done")
   Final_Exclusion_Matrix <- Exclusion_Matrix[-1,]
+  
+  if(is.null(nrow(Final_Exclusion_Matrix))){
+    cat("Compound class to small or any lacks noise to screen.")
+  }else{
+  
   #time to screen
   dir <- rep("<=", nrow(Final_Exclusion_Matrix)) # all constraints '<='
   
@@ -187,6 +191,7 @@ LOB_lpsolve <- function(LOBpeaklist,choose_class=NULL,use_ms2_RtF) {
   )
   
   return[return$match_ID %in% run$match_ID,"lpSolve"] <- run$Type
+  }
   }
   return(return)
 }
