@@ -153,7 +153,7 @@ LOB_lpsolve <- function(LOBpeaklist,choose_class=NULL,use_ms2_RtF) {
   Final_Exclusion_Matrix <- Exclusion_Matrix[-1,]
   
   if(is.null(nrow(Final_Exclusion_Matrix))){
-    cat("Compound class to small or any lacks noise to screen.")
+    cat("\nCompound class to small or any lacks noise to screen.")
   }else{
   
   #time to screen
