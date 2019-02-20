@@ -109,8 +109,8 @@ doshiny_files <- function() {
       observeEvent(eventExpr = input$mzXMLdirs, {
         sub_dir_out <- choose.dir()
         sub_dir_out<-gsub("\\\\","/",sub_dir_out)
-        updateTextInput(session, "textdirectory", value = print(sub_dir_out))
-      )}
+        updateTextInput(session, "textmzXMLdirs", value = print(sub_dir_out))
+      })
       
       
       #end app and send outputs the Global Enviroment
@@ -710,7 +710,7 @@ lockBinding("groups", imports)
 
 # create annotated xset using wrapper annotate(), allowing us to perform all CAMERA tasks at once
 
-xset_a = annotate(xset,
+xset_a = CAMERA::annotate(xset,
                   
                   quick=FALSE, # set to FALSE because we want to run groupCorr; will also cause CAMERA to run adduct annotation. while LOBSTAHS will do its own adduct identification later, it doesn't hurt to do this now if it lets CAMERA create better pseudospectra
                   sample=NA, # use all samples
