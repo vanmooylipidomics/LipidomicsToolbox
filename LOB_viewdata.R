@@ -46,7 +46,7 @@ LOB_viewdata <- function(LOBpeaklist){
                                     step=10, round=1),
                         br(),
                         checkboxInput('text', 'Display Names'),
-                        checkboxInput('oxy', 'Toggle Oxydized Compounds ')
+                        checkboxInput('oxy', 'Toggle Oxidized Compounds ')
                  ),
                  column(4,
                         selectInput('class', 'Select Lipid Class', c("All",as.character(unique(run$species))),multiple = TRUE,selected = "All"),
@@ -130,4 +130,6 @@ LOB_viewdata <- function(LOBpeaklist){
   runApp(app)
 }
 
+
+LOB_viewdata(original_data)
   
