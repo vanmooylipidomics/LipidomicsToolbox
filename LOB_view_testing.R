@@ -421,9 +421,9 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
                        selectInput('species', 'Select Species', c("All",as.character(unique(run$species))),multiple = FALSE),
                        selectInput('xaxis', 'X_Variable', c('None','Carbon','Double Bonds','lpSolve Fitted','Lipid Class'), selected = 'Carbon'),
                        selectInput('fill_colors', 'Fill_Colors', c('Carbon', 'Double Bonds', 'Species'))
-          
-          
-          )
+                ),
+                column(4,
+                       selectInput('flag', "Flag?", c("All", as.character(unique(run$Flag))), multiple = TRUE))
         )
       )
     ),
@@ -505,8 +505,12 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
         
         tidy_data <- tidy_run %>% 
           filter(is.na(FA_total_no_C) != TRUE)
-        tidy_data <- tidy_data[tidy_data$species==input$species,]
+        tidy_subset <- tidy_data[tidy_data$species==input$species,]
         
+        # further subset for specific flags
+        if(input$flag != "All"){
+          tidy_subset <- tidy_subset[tidy_subset$Flag == as.character(input$flag),]
+        }
         
         # if("All"%in%input$species!=TRUE){
         #   tidy_data <- tidy_data[tidy_data$species==input$species,]
@@ -518,7 +522,7 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
         # }
         
         # Construct inital plot with limits and points
-        b <- ggplot(data = tidy_data, aes(x = FA_total_no_C,y = Peak_Size))+
+        b <- ggplot(data = tidy_subset, aes(x = FA_total_no_C,y = Peak_Size))+
           geom_bar(stat = "identity", position = "stack") +
           scale_color_manual(values = palette)+# Add colors for carbon number
           xlab("as.character(input$xaxis)") +
@@ -529,7 +533,7 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
             axis.ticks = element_blank())
         
         if(input$xaxis=="Carbon"){
-          b <- ggplot(data = tidy_data, aes(FA_total_no_C,y = Peak_Size)) +
+          b <- ggplot(data = tidy_subset, aes(FA_total_no_C,y = Peak_Size)) +
             geom_bar(stat = "identity", position = "stack") +
             scale_color_manual(values = palette)+
             xlab(paste(input$xaxis)) +
@@ -539,7 +543,7 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
 
         # Add color for DB number
         if(input$xaxis=="Double Bonds"){
-          b <- ggplot(data = tidy_data, aes(FA_total_no_DB, y = Peak_Size)) +
+          b <- ggplot(data = tidy_subset, aes(FA_total_no_DB, y = Peak_Size)) +
             geom_bar(stat = "identity", position = "stack") +
             scale_color_manual(values = palette)+
             xlab(paste(input$xaxis)) +
@@ -551,7 +555,11 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
           b <- b + geom_point(aes(fill=FA_total_no_DB)) +
             scale_color_manual(values = palette)
         }
+        
+        
+        
         print(b)
+        
       })
     }
   )
