@@ -401,7 +401,7 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
                         checkboxInput('oxy', 'Toggle Oxidized Compounds ')
                  ),
                  column(4,
-                        selectInput('class', 'Select Lipid Class', c("All",as.character(unique(run$species))),multiple = TRUE,selected = "All"),
+                        selectInput('class', 'Select Lipid Class', c("All", as.character(unique(run$species))), multiple = TRUE, selected = "All"),
                         selectInput('color', 'Point Color', c('None','Carbon','Double Bonds','lpSolve Fitted', 'RT_Window', 'Lipid Class')),
                         selectInput('color', 'Color', c('None', names(run)))
                  ),
@@ -418,18 +418,13 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
                        selectInput('species', 'Select Species', c("All",as.character(unique(run$species))),multiple = FALSE),
                        selectInput('xaxis', 'X_Variable', c('None','Carbon','Double Bonds','lpSolve Fitted','Lipid Class'), selected = 'Carbon'),
                        selectInput('fill_colors', 'Fill_Colors', c('Carbon', 'Double Bonds', 'Species'))
-<<<<<<< HEAD
                 ),
                 column(4,
-                       selectInput('flag', "Flag?", c("All", as.character(unique(run$Flag))), multiple = TRUE))
-=======
-
+                       selectInput('flag', "Flag?", c("All", as.character(unique(run$Flag))), multiple = TRUE, selected = "All"))
 
           )
->>>>>>> 46ecde3bbffa3b4f9bfe228207a0bbcbb32f45b7
         )
-      )
-    ),
+      ),
 
 
     # Define server logic to draw our plot
@@ -508,19 +503,13 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
 
         tidy_data <- tidy_run %>%
           filter(is.na(FA_total_no_C) != TRUE)
-<<<<<<< HEAD
         tidy_subset <- tidy_data[tidy_data$species==input$species,]
         
         # further subset for specific flags
         if(input$flag != "All"){
           tidy_subset <- tidy_subset[tidy_subset$Flag == as.character(input$flag),]
         }
-        
-=======
-        tidy_data <- tidy_data[tidy_data$species==input$species,]
 
-
->>>>>>> 46ecde3bbffa3b4f9bfe228207a0bbcbb32f45b7
         # if("All"%in%input$species!=TRUE){
         #   tidy_data <- tidy_data[tidy_data$species==input$species,]
         # }
