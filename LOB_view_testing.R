@@ -6,7 +6,7 @@
 
 RT_Factor_Sort <- function(original_data, RT_Factor_Dbase){
 
-  library(dplyr)
+  library(tidyverse)
 
   ### Check Inputs ###
 
@@ -63,14 +63,6 @@ RT_Factor_Sort <- function(original_data, RT_Factor_Dbase){
 
   # make sure peakgroup rt is numeric
   original_data$peakgroup_rt <- as.numeric(original_data$peakgroup_rt)
-
-  #check if there is an X1 or X0 column, and get rid of it
-  if(is.null(original_data$X0) != FALSE){
-    original_data <- original_data %>% select(-X0)
-  }
-  if(is.null(original_data$X1) != FALSE){
-    original_data <- original_data %>% select(-X0)
-  }
 
   # Extract correct DNPPE retention time
   DNPPE_RT <- original_data$peakgroup_rt[which(grepl("DNPPE", original_data$compound_name))]
@@ -146,9 +138,13 @@ RT_Factor_Sort <- function(original_data, RT_Factor_Dbase){
 
   # change levels of colors so they plot in the right order
   Combined$Flag = factor(Combined$Flag, levels = c("Red", "ms2v", "5%_rtv", "10%_rtv", "Unknown"))
-
-  return(Combined)
+  
+  Flagged_Data <- original_data
+  Flagged_Data[Flagged_Data$match_ID %in% Combined$match_ID, "Flag"] <- as.character(Combined$Flag)
+  Flagged_Data <<- Flagged_Data
 }
+
+##################################
 
 LOB_lpsolve <- function(LOBpeaklist,choose_class=NULL) {
 
@@ -575,3 +571,5 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
 LOB_viewdata(Combined)
 
 original_data <- read.csv("C:/Users/TSQ/Desktop/Daniel Lowenstein/KimT_cleaning/Edited_KimT_Pos_bw20_LOBSTAHS_screened_peakdata_2019-02-26T10-58-14_AM-0500.csv")
+
+RT_Factor_Sort(original_data, RT_Factor_Dbase)
