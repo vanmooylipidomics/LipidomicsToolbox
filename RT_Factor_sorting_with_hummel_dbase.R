@@ -17,6 +17,8 @@ RT_Factor_Dbase <-read.csv("C:/Users/TSQ/Desktop/Daniel Lowenstein/RT_Factors/Hu
 
 RT_Factor_Sort <- function(original_data, RT_Factor_Dbase){
   
+  library(tidyverse)
+  
   # make sure peakgroup rt is numeric
   original_data$peakgroup_rt <- as.numeric(original_data$peakgroup_rt)
   

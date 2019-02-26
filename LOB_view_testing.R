@@ -355,7 +355,7 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
            value = Peak_Size,
            -species, -compound_name, -LOBdbase_mz,
            -peakgroup_rt, -degree_oxidation,
-           -FA_total_no_C, -FA_total_no_DB)
+           -FA_total_no_C, -FA_total_no_DB, -Flag)
 
   # Set up our large color pallete
   palette <-c("#E41A1C","#377EB8","#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF",
