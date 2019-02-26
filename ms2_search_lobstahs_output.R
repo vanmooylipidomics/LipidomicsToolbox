@@ -5,8 +5,8 @@ library(xcms)
 library(MSnbase)
 
 #load lobstahs output
-setwd("C:/Users/TSQ/Desktop/Daniel Lowenstein/Nicole_Coral_Data/Rerun_with_ms2/")
-data <- read.csv("Nicole_Rerun_PosMode_LOBSTAHS_screened_peakdata_2019-02-06T10-59-51_AM-0500.csv")
+setwd("C:/Users/TSQ/Desktop/Daniel Lowenstein/KimT_Cleaning/")
+data <- read.csv("Edited_KimT_Pos_bw20_LOBSTAHS_screened_peakdata_2019-02-26T10-58-14_AM-0500")
 
 lobs_csv <- data %>% filter(species != "NA")
 
