@@ -325,7 +325,12 @@ LOB_lpsolve <- function(LOBpeaklist,choose_class=NULL) {
       print(ggplot(run,aes(x = peakgroup_rt, y = LOBdbase_mz,color=Type)) +
               scale_color_manual(values=c("#e7cd08", "#e70808", "#08e799")) +
               geom_point() +
-              geom_text(label=paste0(as.character(run$FA_total_no_C), ":", as.character(run$FA_total_no_DB)),nudge_y = 10,size=2,color="black")+
+              geom_text(label=paste0(as.character(run$FA_total_no_C), ":", 
+                                     as.character(run$FA_total_no_DB)), 
+                        hjust = 1, 
+                        vjust = 2, 
+                        size=2, 
+                        color="black")+
               ggtitle(paste0("lpSolve Screened Data - ", as.character(run$species))) +
               xlab("Peak Group Retention Time (sec)")+
               ylab("Peak Group m/z")
@@ -485,7 +490,7 @@ LOB_viewdata <- function(LOBpeaklist, RT_Factor_Dbase){
         }
 
         if(input$facet_row == "RTF_Window"){
-          g <- g + geom_errorbarh(aes(xmax = as.numeric(RTF_Window/DNPPE_Factor*peakgroup_rt*1.1), xmin = RTF_Window/DNPPE_Factor*peakgroup_rt*0.9, color=as.character(Flag)))
+          g <- g + geom_errorbarh(aes(xmax = as.numeric(DBase_DNPPE_RT*1.1), xmin = DBase_DNPPE_RT*0.9, color=as.character(Flag)))
         }
 
         # Add colors for classes
