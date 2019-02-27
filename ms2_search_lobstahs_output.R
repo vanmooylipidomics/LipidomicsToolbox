@@ -66,6 +66,5 @@ ms2_search <- function(LOBset, centWave_ms2){
     print(paste0("Matches found:", nrow(ms2matches)))
   }
 
-Available_ms2_scans <<- Storage
-print("Output available ms2 scans.")
+return(Storage)
 }
