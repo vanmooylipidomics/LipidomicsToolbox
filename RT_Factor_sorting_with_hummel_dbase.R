@@ -78,7 +78,12 @@ RT_Factor_Sort <- function(original_data, RT_Factor_Dbase, choose_class = FALSE,
   
   # Extract correct DNPPE retention time
   DNPPE_RT <- as.numeric(original_data$peakgroup_rt[which(grepl("DNPPE", original_data$compound_name))])
-  #DNPPE_RT <- DNPPE_RT[***]  #if there are two DNPPE peaks, index to the correct one
+  
+  if(length(DNPPE_RT) > 1){
+    stop("Looks like there's more than one DNPPE peak.",
+          "Please resolve in input LOBpeaklist and try again."
+    )
+  }
   
   # Add column for DNPPE factor and an empty one for flagging
   original_data <- original_data %>%
