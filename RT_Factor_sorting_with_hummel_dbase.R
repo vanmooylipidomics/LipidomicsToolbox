@@ -8,11 +8,11 @@ library(tidyverse)
 
 
 # where are source files?
-setwd("C:/Users/TSQ/Desktop/Daniel Lowenstein/Conroy_Krill_Files/")
+setwd("C:/Users/TSQ/Desktop/Daniel Lowenstein/KimT_Cleaning/")
 
 # Load data and RT Factor database
 # May need to change -X0 or -X1 in source csv
-original_data <- read.csv("C:/Users/TSQ/Desktop/Daniel Lowenstein/Conroy_Krill_Files/Newer_Conroy_Incub_PosMode_LOBSTAHS_screened_peakdata_2018-12-11T3-48-52_PM-0500.csv")
+original_data <- read.csv("Edited_KimT_Pos_bw20_LOBSTAHS_screened_peakdata_2019-02-26T10-58-14_AM-0500.csv")
 RT_Factor_Dbase <-read.csv("C:/Users/TSQ/Desktop/Daniel Lowenstein/RT_Factors/Hummel RtF Master Database - rtf_data.csv")
 
 
@@ -188,8 +188,8 @@ RT_Factor_Sort <- function(original_data, RT_Factor_Dbase, choose_class = FALSE,
         filter(species == paste(lipid_classes[i]))
       
       print(ggplot(data = Lipid)+
-              geom_point(aes(x = peakgroup_rt, y = LOBdbase_mz, color =  Flag))+
-              geom_point(aes(x = DBase_DNPPE_RF*DNPPE_RT, y = LOBdbase_mz, color =  Flag))+
+              geom_point(aes(x = peakgroup_rt, y = LOBdbase_mz, color =  Flag, size = 0.05))+
+              geom_point(aes(x = DBase_DNPPE_RF*DNPPE_RT, y = LOBdbase_mz, color =  Flag), shape = 3)+
               geom_errorbarh(aes(xmax = DBase_DNPPE_RF*DNPPE_RT*1.1, xmin = DBase_DNPPE_RF*DNPPE_RT*0.9, height = 0.2, y = LOBdbase_mz, color = Flag))+
               geom_text(aes(x = peakgroup_rt, y = LOBdbase_mz, label = C_DB, hjust = 1, vjust = 2, color = Flag))+
               ggtitle(paste0("M/Z vs. RT in ", lipid_classes[i])))
@@ -206,3 +206,4 @@ RT_Factor_Sort <- function(original_data, RT_Factor_Dbase, choose_class = FALSE,
   return(Flagged_Data)
 }
 
+RT_Factor_Sort(original_data, RT_Factor_Dbase, choose_class = "DGTS_DGTA", plot_data = TRUE)
