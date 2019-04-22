@@ -8,8 +8,8 @@ setwd("C:/Users/TSQ/Desktop/Daniel Lowenstein/KimT_Cleaning/")
 
 # Load data and RT Factor database
 # May need to change -X0 or -X1 in source csv
-original_data <- read.csv("Edited_KimT_Pos_bw20_LOBSTAHS_screened_peakdata_2019-02-26T10-58-14_AM-0500.csv")
-RT_Factor_Dbase <-read.csv("C:/Users/TSQ/Desktop/Daniel Lowenstein/RT_Factors/Hummel RtF Master Database - rtf_data.csv")
+original_data <- read.csv("Edited_NoHQCs_PosAndNeg_KimT_LOBSTAHS_screened_peakdata_2019-02-26T10-58-14_AM-0500.csv")
+RT_Factor_Dbase <-read.csv("C:/Users/TSQ/Desktop/Daniel Lowenstein/Older_Projects/RT_Factors/Hummel RtF Master Database - rtf_data.csv")
 
 
 RT_Factor_Sort <- function(original_data, RT_Factor_Dbase, choose_class = FALSE, plot_data = FALSE, save_plots = FALSE, data_title){
@@ -202,4 +202,5 @@ RT_Factor_Sort <- function(original_data, RT_Factor_Dbase, choose_class = FALSE,
   return(Flagged_Data)
 }
 
-RT_Factor_Sort(original_data, RT_Factor_Dbase, choose_class = "DGTS_DGTA", plot_data = TRUE)
+solved <- LOB_lpsolve(original_data)
+flagged <- RT_Factor_Sort(solved, RT_Factor_Dbase)
