@@ -31,7 +31,7 @@ ms2_search <- function(LOBset, centWave_ms2){
     mz <- run$LOBdbase_mz # pull mz and rt for that one row
     rt <- run$peakgroup_rt
     
-    mzrange <- mz*(0.000001*10) # calculate a mass range (in this case, within 10 ppm)
+    mzrange <- mz*(0.000001*2.5) # calculate a mass range (in this case, within 10 ppm)
     mzlow <- (mz-mzrange)
     mzhigh <- (mz+mzrange)
     
@@ -58,7 +58,7 @@ ms2_search <- function(LOBset, centWave_ms2){
     # ****Change QE number!!!!!!!!!!!!!
     if(nrow(ms2matches)>0){
       for (j in 1:nrow(ms2matches)){
-        ms2matches[j,"file"] <- paste0("QE00", (6420+as.numeric(centWave_ms2@featureData@data[row.names(ms2matches[j,]),"fileIdx"])))
+        ms2matches[j,"file"] <- paste0("QE00", (4266+as.numeric(centWave_ms2@featureData@data[row.names(ms2matches[j,]),"fileIdx"])))
       }
     }
     Storage <- rbind(Storage, ms2matches)
