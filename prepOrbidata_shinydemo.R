@@ -103,19 +103,19 @@ doshiny_files <- function() {
       observeEvent(eventExpr = input$directory, {
         dir_out <- choose.dir()
         dir_out<-gsub("\\\\","/",dir_out)
-        updateTextInput(session, "textdirectory", value = print(dir_out))
+        updateTextInput(session, "textdirectory", value = dir_out)
       })
-      
+
       observeEvent(eventExpr = input$mzXMLdirs, {
         sub_dir_out <- choose.dir()
         sub_dir_out<-gsub("\\\\","/",sub_dir_out)
-        updateTextInput(session, "textmzXMLdirs", value = print(sub_dir_out))
+        updateTextInput(session, "textmzXMLdirs", value = sub_dir_out)
       })
       
       
       #end app and send outputs the Global Enviroment
       observeEvent(input$ending, {
-        fpl <- list(input$textdirectory, input$textmzXMLdirs)
+        fpl <- list(as.character(input$textdirectory), as.character(input$textmzXMLdirs))
         
         stopApp(returnValue = fpl)
       }
@@ -586,14 +586,9 @@ if (exists("excluded.mzXMLfiles") & length("excluded.mzXMLfiles")>0) {
 ##### PEAK PICKING
 
 #read in only msLevel1
-<<<<<<< HEAD
+
 rawSpec   <- MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk", msLevel = 1)
 rawSpecSave <-  MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk")
-=======
-rawSpec <- MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk", msLevel = 1)
-rawSpec_ms2 <- MSnbase::readMSData(mzXMLfiles, centroided=TRUE, mode="onDisk")
-
->>>>>>> 05171d66a61a5015c4dc50d8786d8ad6a406f8ae
 
 if (use_gui==TRUE){
   cwp<-doshiny_cent()
