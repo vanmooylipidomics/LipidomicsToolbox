@@ -3,8 +3,8 @@
 # using 
 
 #load lobstahs output
-setwd("C:/Users/TSQ/Desktop/Daniel Lowenstein/KimT_Cleaning/")
-original_data <- read.csv("Edited_KimT_Pos_bw20_LOBSTAHS_screened_peakdata_2019-02-26T10-58-14_AM-0500.csv")
+setwd("C:/Users/TSQ/Desktop/Daniel Lowenstein/NAAMES/")
+original_data <- read.csv("Edits_Naames_Second_Half_coded.csv")
 
 ms2_search <- function(LOBset, centWave_ms2){
     
@@ -31,7 +31,7 @@ ms2_search <- function(LOBset, centWave_ms2){
     mz <- run$LOBdbase_mz # pull mz and rt for that one row
     rt <- run$peakgroup_rt
     
-    mzrange <- mz*(0.000001*10) # calculate a mass range (in this case, within 10 ppm)
+    mzrange <- mz*(0.000001*2.5) # calculate a mass range (in this case, within 2.5 ppm)
     mzlow <- (mz-mzrange)
     mzhigh <- (mz+mzrange)
     
@@ -46,7 +46,7 @@ ms2_search <- function(LOBset, centWave_ms2){
     
     # subset that by only taking retention times within the rt window
     ms2matches <- subset.data.frame(ms2candid, subset = retention>=rtlow&retention<=rthigh)
-    # create empty row for file names
+    # create empty column for file names
     ms2matches$file <- rep(0,nrow(ms2matches))
     # add a column with compound name so we can search later
     ms2matches$compound_name <- rep(paste(run$compound_name), nrow(ms2matches))
@@ -58,7 +58,7 @@ ms2_search <- function(LOBset, centWave_ms2){
     # ****Change QE number!!!!!!!!!!!!!
     if(nrow(ms2matches)>0){
       for (j in 1:nrow(ms2matches)){
-        ms2matches[j,"file"] <- paste0("QE00", (6420+as.numeric(centWave_ms2@featureData@data[row.names(ms2matches[j,]),"fileIdx"])))
+        ms2matches[j,"file"] <- paste0("QE00", (4360+as.numeric(centWave_ms2@featureData@data[row.names(ms2matches[j,]),"fileIdx"])))
       }
     }
     Storage <- rbind(Storage, ms2matches)
