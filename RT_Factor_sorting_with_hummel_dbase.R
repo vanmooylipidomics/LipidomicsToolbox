@@ -4,12 +4,12 @@
 # input a raw lobset
 
 # where are source files?
-setwd("C:/Users/TSQ/Desktop/Daniel Lowenstein/KimT_Cleaning/")
-
-# Load data and RT Factor database
-# May need to change -X0 or -X1 in source csv
-original_data <- read.csv("Edited_NoHQCs_PosAndNeg_KimT_LOBSTAHS_screened_peakdata_2019-02-26T10-58-14_AM-0500.csv")
-RT_Factor_Dbase <-read.csv("C:/Users/TSQ/Desktop/Daniel Lowenstein/Older_Projects/RT_Factors/Hummel RtF Master Database - rtf_data.csv")
+# setwd("C:/Users/TSQ/Desktop/Daniel Lowenstein/")
+# 
+# # Load data and RT Factor database
+# # May need to change -X0 or -X1 in source csv
+# original_data <- read.csv("Edited_NoHQCs_PosAndNeg_KimT_LOBSTAHS_screened_peakdata_2019-02-26T10-58-14_AM-0500.csv")
+# RT_Factor_Dbase <-read.csv("C:/Users/TSQ/Desktop/Daniel Lowenstein/Hummel RtF Master Database - rtf_data.csv")
 
 
 RT_Factor_Sort <- function(original_data, RT_Factor_Dbase, choose_class = FALSE, plot_data = FALSE, save_plots = FALSE, data_title){
