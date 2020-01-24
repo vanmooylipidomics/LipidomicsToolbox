@@ -5,18 +5,19 @@
 #Furthermore, MSConvert.exe must be specified in the system PATH (http://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/)
 
 #set working directory
-setwd("H:/Alina/Microlayer/")
+setwd("Desktop/Your/Path/Here")
 
 #set raw data directory location
-path = ("H:/Alina/Microlayer/")
+path = ("C:/Your/Path Goes/Here/data/")
 
 #prepare msconvert system commands to extract all .raw data files to .mzXML
+path2 = (shQuote(path))
 file.names <- dir(path, pattern =".raw")
-msconvcomm <- paste("msconvert ", path, file.names, " --mzXML --filter  \"peakPicking true 1-\" --filter \"scanTime [0,5400]\" -o mzXML_ms1_two_mode -v ", sep="")
+msconvcomm <- paste("msconvert ", path2, file.names, " --mzXML --filter  \"peakPicking true 1-\" --filter \"scanTime [0,5400]\" -o mzXML_ms1_two_mode -v ", sep="")
 
 #run msconvert system commands
 for(i in 1:length(msconvcomm)){
-system(msconvcomm[i])
+  system(msconvcomm[i])
 }
 
 #extract positive and negative ms1 data from the .mzXML files
