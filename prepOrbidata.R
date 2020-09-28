@@ -63,7 +63,12 @@ library(IPO)
 
 # library(snowfall) # if multicore tasking is desired; seems this line may be unncessary under Windows R
 
-library(snow) # if multicore tasking is desired
+#library(snow) 
+
+library(BiocParallel)# if multicore tasking is desired
+print(paste0("Utilizing ",getOption("mc.cores")," Cores for processing"))
+register(MulticoreParam(tasks = 100,progressbar = TRUE))
+
 
 # ******************************************************************
 ################ Basic user begin editing here #############
@@ -71,7 +76,7 @@ library(snow) # if multicore tasking is desired
 
 ################ User: define locations of data files and database(s) #############
 
-working_dir = "/Users/jrcollins/Code/PtH2O2lipids/mzXML/" # specify working directory
+working_dir = "/home/tyronelee/PtH2O2lipids/mzXML" # specify working directory
 setwd(working_dir) # set working directory to working_dir
 
 # specify directories subordinate to the working directory in which the .mzXML files for xcms can be found; per xcms documentation, use subdirectories within these to divide files according to treatment/primary environmental variable (e.g., station number along a cruise transect) and file names to indicate timepoint/secondary environmental variable (e.g., depth)
@@ -80,7 +85,7 @@ mzXMLdirs = c("Pt_H2O2_mzXML_ms1_pos/","Pt_H2O2_mzXML_ms1_neg/")
 
 # specify which of the directories above you wish to analyze this time through
 
-chosenFileSubset = "Pt_H2O2_mzXML_ms1_pos/"
+chosenFileSubset = "Pt_H2O2_mzXML_ms1_neg/"
 
 # specify the ID numbers (i.e., Orbi_xxxx.mzXML) of any files you don't want to push through xcms (e.g., blanks); note that the blanks for the Pt H2O2 dataset (Orbi_0481.mzXML and Orbi_0482.mzXML) have already been removed
 
@@ -344,8 +349,10 @@ if (centWparam.source==1) { # user wants to run IPO now
 
   resultPeakpicking = optimizeXcmsSet(files = IPOsubset,
                                        params = peakpickingParameters,
-                                       nSlaves=4,
+                                       #nSlaves=4, depreciated
+                                       BPPARAM = MulticoreParam(),
                                        subdir='rsmDirectory')
+                                        #will throw a warning, but setting nslaves=1 allows xcms to run in parallel 
 
   optimizedXcmsSetObject = resultPeakpicking$best_settings$xset
 
@@ -425,7 +432,7 @@ centW.mzCenterFun = c("wMean")
 centW.verbose.columns = TRUE
 centW.integrate = 1
 centW.profparam = list(step=0.001) # setting this very low, per Jan Stanstrup; low setting uses more memory but helps avoid the situation where mass accuracy eclipses the actual width of the m/z windows used to define each peak (a real possibility with Orbitrap data; see http://metabolomics-forum.com/viewtopic.php?f=8&t=598#p1853)
-centW.nSlaves = 4 # if you have r package "snow" installed, can set to number of cores you wish to make use of
+#centW.nSlaves = 4 # if you have r package "snow" installed, can set to number of cores you wish to make use of
 
 # ################# Peak visualization using individual sample files #############
 
@@ -509,9 +516,11 @@ xset_centWave = xcmsSet(mzXMLfiles,
                         snthresh = centW.snthresh,
                         integrate = centW.integrate,
                         prefilter = centW.prefilter,
-                        mzCenterFun = centW.mzCenterFun,
+                        mzCenterFun = centW.mzCenterFun
                         #                 sleep = centW.sleep
-                        nSlaves = centW.nSlaves
+                        #nSlaves = centW.nSlaves  - nslaves is depreciated,
+                        #multicoreparam detects and uses the no of cores on sys
+                        #BPPARAM = MulticoreParam() 
 )
 
 print(paste0("xcmsSet object xset_centWave created:"))
@@ -567,7 +576,8 @@ if (groupretcor.prams.source==1) { # user wants to run IPO now
   print(paste0("retcor method '",retcor.meth,"' will be used..."))
 
   resultRetcorGroup = optimizeRetGroup(xset=xset_centWave, params=retcorGroupParameters,
-                                        nSlaves=4, subdir="rsmDirectory")
+                                         subdir="rsmDirectory")
+  #IPO parallelization is seperate from bioparallel, not sure what is the best call
 
   ################# Export IPO starting value(s) and optimal settings for each parameter to .csv #############
 
@@ -804,8 +814,8 @@ xset_gr.ret.rg = group(xset_gr.ret,
 # fill missing peaks
 
 print(paste0("Filling missing peaks..."))
-
-xset_gr.ret.rg.fill = fillPeaks.chrom(xset_gr.ret.rg, nSlaves = 4)
+#cannot use biocparallel nor rmpi; possible error with swp memory,  run single threaded for consistency 
+xset_gr.ret.rg.fill = fillPeaks.chrom(xset_gr.ret.rg, BPPARAM=SerialParam())
 
 #####################################################################################
 ##### Isotope peak identification, creation of xsAnnotate object using CAMERA #######
@@ -821,12 +831,16 @@ lockBinding("groups", imports)
 
 # create annotated xset using wrapper annotate(), allowing us to perform all CAMERA tasks at once
 
-xset_a = annotate(xset_gr.ret.rg.fill,
+
+#register(MulticoreParam(4))
+xset_b = annotate(xset_gr.ret.rg.fill,
 
                   quick=FALSE, # set to FALSE because we want to run groupCorr; will also cause CAMERA to run adduct annotation. while LOBSTAHS will do its own adduct identification later, it doesn't hurt to do this now if it lets CAMERA create better pseudospectra
                   sample=NA, # use all samples
-                  nSlaves=4, # use 4 sockets
-
+                  #nSlaves=6, # still uses Rmpi: use 4 sockets, 6 for i7
+                  # hangs when using biocparallel
+                  
+                  
                   # group FWHM settings
                   # using defaults for now
 
@@ -865,10 +879,10 @@ xset_a = annotate(xset_gr.ret.rg.fill,
 
                   )
 
-cleanParallel(xset_a) # kill sockets
+cleanParallel(xset_b) # kill sockets
 
 # at this point, should have an xsAnnotate object called "xset_a" in hand, which will serve as the primary input to the main screening and annotation function "doLOBscreen" in LOBSTAHS
 
 print(paste0("xsAnnotate object 'xset_a' has been created. User can now use LOBSTAHS to perform screening..."))
 
-print(xset_a)
+print(xset_b)

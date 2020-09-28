@@ -1,15 +1,14 @@
-# LipidomicsToolbox
+# LipidomicsToolbox (TESTING)
 R scripts for converting &amp; processing HPLC-MS lipid data. These scripts were developed in the [Van Mooy Lab](http://www.whoi.edu/page.do?pid=80356) at [Woods Hole Oceanographic Institution](http://www.whoi.edu/). Many of them were written specifically to prepare HPLC-ESI-MS data from an Exactive Orbitrap mass spectrometer for follow-on analysis with the [LOBSTAHS](http://github.com/vanmooylipidomics/LOBSTAHS) package.
 
-<h4>R scripts in this repository:</h4>
+<h4>New R scripts in this repository:</h4>
+   
+ 1. [prepOrbidata_shinydemo.R](https://github.com/vanmooylipidomics/LipidomicsToolbox/blob/testing/prepOrbidata_shinydemo.R):  TESTING. This is nearly identical to prepOrbidata.R but has been refactored for XCMS3 and includes a GUI option for entering peak-picking, RT correction, and grouping steps. Intended to use as a calibration tool for specific MS experiments.
 
-1. [prepOrbidata.R](https://github.com/vanmooylipidomics/LipidomicsToolbox/blob/master/prepOrbidata.R): [LOBSTAHS](http://github.com/vanmooylipidomics/LOBSTAHS) presumes data have been pre-processed with [xcms](https://bioconductor.org/packages/release/bioc/html/xcms.html) and [CAMERA](https://bioconductor.org/packages/release/bioc/html/CAMERA.html); [prepOrbidata.R](https://github.com/vanmooylipidomics/LipidomicsToolbox/blob/master/prepOrbidata.R) can help with this. If the user chooses, prepOrbidata.R applies [IPO](https://github.com/glibiseller/IPO) to optimize xcms peak picking and retention time correction parameters. Includes a function to write the results of each IPO optimization run to a .csv file so the results aren't lost.
-
-2. [optim_centWaveParams_standalone.R](https://github.com/vanmooylipidomics/LipidomicsToolbox/blob/master/optim_centWaveParams_standalone.R): Uses [IPO](https://github.com/glibiseller/IPO) to optimize parameters for the [xcms](https://bioconductor.org/packages/release/bioc/html/xcms.html) peak picking function centWave. Works fine on its own, but has been folded into [prepOrbidata.R](https://github.com/vanmooylipidomics/LipidomicsToolbox/blob/master/prepOrbidata.R). Includes a function to write the results of each IPO optimization run to a .csv file so the results aren't lost.
-
-3. [Exactive_full_scan_process_ms1+.r](https://github.com/vanmooylipidomics/LipidomicsToolbox/blob/master/Exactive_full_scan_process_ms1%2B.r): Scripted calling of the [msconvert](http://proteowizard.sourceforge.net/tools/msconvert.html) command line tool to convert Thermo Exactive Orbitrap .raw files obtained in polarity switching mode to .mzXML files that be read by [xcms](https://bioconductor.org/packages/release/bioc/html/xcms.html), [MAVEN](http://genomics-pubs.princeton.edu/mzroll/index.php), mzR, or your favorite program/package. [Exactive_full_scan_process_ms1+.r](https://github.com/vanmooylipidomics/LipidomicsToolbox/blob/master/Exactive_full_scan_process_ms1%2B.r) creates centroids and extracts positive and negative ion mode scans into separate .mzXML files. Gives user the option to convert all files in a particular directory, or only those files in a .txt document:
-   * [mzxml_convert_list.txt](https://github.com/vanmooylipidomics/LipidomicsToolbox/blob/master/mzxml_convert_list.txt): For (optional) use with [Exactive_full_scan_process_ms1+.r](https://github.com/vanmooylipidomics/LipidomicsToolbox/blob/master/Exactive_full_scan_process_ms1%2B.r)
-
+ 2. [StandardCheckApp.R](https://github.com/vanmooylipidomics/LipidomicsToolbox/blob/testing/StandardCheckApp.R):  TESTING. Tool for calibrating MS stadard compounds in a GUI. Will screen for expected compounds (standards) at a given m/z range and return abundance, RT, and can plot chromatogram of the found peaks in the experiment. Must run peak-picking first before using.
+ 
+ 
+ 
 <h4>Data (.mzXML):</h4>
 
 The raw data files that used to reside here have been incorporated into their own R package **PtH2O2lipids** and thus have their own repository: https://github.com/vanmooylipidomics/PtH2O2lipids

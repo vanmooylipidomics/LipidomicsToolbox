@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1532118253398.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1458458857",
+    "id" : "27896746",
+    "lastKnownWriteTime" : 1532354981,
+    "last_content_update" : 1532354981330,
+    "path" : "~/GitHub/LipidomicsToolbox/StandardCheckApp.R",
+    "project_path" : "StandardCheckApp.R",
+    "properties" : {
+        "cursorPosition" : "225,4",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
